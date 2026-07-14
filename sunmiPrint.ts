@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import SunmiPrinter, { AlignValue } from '@es-webdev/react-native-sunmi-printer';
+import * as SunmiPrinterLibrary from '@mitsuharu/react-native-sunmi-printer-library';
 
 import { TicketResponse } from './types';
 
@@ -29,18 +29,15 @@ function formaterDate(date: Date): string {
   return date.toLocaleString('fr-FR');
 }
 
-async function logoEnBase64(logoUrl: string): Promise<string | null> {
+async function logoEnDataUri(logoUrl: string): Promise<string | null> {
   try {
     const reponse = await fetch(logoUrl);
     const blob = await reponse.blob();
     return await new Promise((resolve, reject) => {
       const lecteur = new FileReader();
       lecteur.onerror = reject;
-      lecteur.onload = () => {
-        const resultat = lecteur.result as string;
-        // printBitmap veut le base64 pur, sans le prefixe "data:image/...;base64,"
-        resolve(resultat.split(',')[1] ?? null);
-      };
+      // printImage attend l'URI de donnees complete ("data:image/...;base64,...").
+      lecteur.onload = () => resolve((lecteur.result as string) ?? null);
       lecteur.readAsDataURL(blob);
     });
   } catch {
@@ -53,8 +50,8 @@ async function verifierImprimante(): Promise<void> {
   if (Platform.OS !== 'android') {
     throw new Error("L'impression sur l'imprimante Sunmi n'est disponible que sur Android.");
   }
-  const disponible = await SunmiPrinter.hasPrinter();
-  if (!disponible) {
+  const pret = await SunmiPrinterLibrary.prepare();
+  if (!pret) {
     throw new Error('Aucune imprimante Sunmi detectee sur cet appareil.');
   }
 }
@@ -64,43 +61,45 @@ async function verifierImprimante(): Promise<void> {
  * le titre fourni), nom de la compagnie, POS, vendeur, adresse et date.
  */
 async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> {
-  await SunmiPrinter.printerInit();
-
   if (entete.logoUrl) {
-    const base64 = await logoEnBase64(entete.logoUrl);
-    if (base64) {
-      await SunmiPrinter.setAlignment(AlignValue.CENTER);
-      await SunmiPrinter.printBitmap(base64, LARGEUR_PAPIER_PIXELS);
-      await SunmiPrinter.lineWrap(1);
+    const dataUri = await logoEnDataUri(entete.logoUrl);
+    if (dataUri) {
+      await SunmiPrinterLibrary.setAlignment('center');
+      await SunmiPrinterLibrary.printImage(dataUri, LARGEUR_PAPIER_PIXELS, 'grayscale');
+      await SunmiPrinterLibrary.lineWrap(1);
     }
   }
 
-  await SunmiPrinter.setAlignment(AlignValue.CENTER);
-  await SunmiPrinter.setFontWeight(true);
-  await SunmiPrinter.printerText(`${titre}\n`);
-  await SunmiPrinter.setFontSize(32);
-  await SunmiPrinter.printerText(`${entete.nomCompagnie}\n`);
-  await SunmiPrinter.setFontSize(24);
-  await SunmiPrinter.setFontWeight(false);
-  await SunmiPrinter.lineWrap(1);
+  await SunmiPrinterLibrary.setAlignment('center');
+  await SunmiPrinterLibrary.setTextStyle('bold', true);
+  await SunmiPrinterLibrary.printText(`${titre}\n`);
+  await SunmiPrinterLibrary.setFontSize(32);
+  await SunmiPrinterLibrary.printText(`${entete.nomCompagnie}\n`);
+  await SunmiPrinterLibrary.setDefaultFontSize();
+  await SunmiPrinterLibrary.setTextStyle('bold', false);
+  await SunmiPrinterLibrary.lineWrap(1);
 
-  await SunmiPrinter.setAlignment(AlignValue.LEFT);
-  await SunmiPrinter.printerText(`POS: ${entete.posId}\n`);
-  await SunmiPrinter.printerText(`Vendeur: ${entete.vendeurNom}\n`);
+  await SunmiPrinterLibrary.setAlignment('left');
+  await SunmiPrinterLibrary.printText(`POS: ${entete.posId}\n`);
+  await SunmiPrinterLibrary.printText(`Vendeur: ${entete.vendeurNom}\n`);
   if (entete.adresse) {
-    await SunmiPrinter.printerText(`Addresse : ${entete.adresse}\n`);
-    await SunmiPrinter.printerText(`Central: ${entete.nomCompagnie}\n`);
+    await SunmiPrinterLibrary.printText(`Addresse : ${entete.adresse}\n`);
+    await SunmiPrinterLibrary.printText(`Central: ${entete.nomCompagnie}\n`);
   }
-  await SunmiPrinter.printerText(`Date: ${formaterDate(new Date())}\n`);
-  await SunmiPrinter.setAlignment(AlignValue.CENTER);
-  await SunmiPrinter.printerText(SEPARATEUR);
+  await SunmiPrinterLibrary.printText(`Date: ${formaterDate(new Date())}\n`);
+  await SunmiPrinterLibrary.setAlignment('center');
+  await SunmiPrinterLibrary.printText(SEPARATEUR);
 }
 
 async function imprimerPied(): Promise<void> {
-  await SunmiPrinter.setAlignment(AlignValue.LEFT);
-  await SunmiPrinter.printerText(`Impression: ${formaterDate(new Date())}\n`);
-  await SunmiPrinter.lineWrap(3);
-  await SunmiPrinter.cutPaper();
+  await SunmiPrinterLibrary.setAlignment('left');
+  await SunmiPrinterLibrary.printText(`Impression: ${formaterDate(new Date())}\n`);
+  await SunmiPrinterLibrary.lineWrap(3);
+  try {
+    await SunmiPrinterLibrary.cutPaper();
+  } catch {
+    // Le Sunmi V2 (portable) n'a pas de massicot -- disponible seulement sur les modeles de bureau.
+  }
 }
 
 /**
@@ -115,8 +114,8 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
   let grandTotal = 0;
 
   for (const ticket of tickets) {
-    await SunmiPrinter.lineWrap(1);
-    await SunmiPrinter.printerText(`#ticket: ${ticket.numero_ticket}\n`);
+    await SunmiPrinterLibrary.lineWrap(1);
+    await SunmiPrinterLibrary.printText(`#ticket: ${ticket.numero_ticket}\n`);
 
     const zonesImprimees = new Set<string>();
 
@@ -124,7 +123,7 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
       const zoneNom = mise.tirage.loterie.nom;
       if (!zonesImprimees.has(zoneNom)) {
         zonesImprimees.add(zoneNom);
-        await SunmiPrinter.printerText(`${zoneNom}\n`);
+        await SunmiPrinterLibrary.printText(`${zoneNom}\n`);
       }
 
       const abrev = abregerTypeJeu(mise.type_jeu.nom);
@@ -132,36 +131,36 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
       const montant = Number(mise.montant);
       const montantTexte = montant === 0 ? 'gratis' : `${montant.toFixed(2)} HTG`;
 
-      await SunmiPrinter.printColumnsText(
+      await SunmiPrinterLibrary.printColumnsText(
         [abrev, numero, `=> ${montantTexte}`],
         [4, 10, 18],
-        [AlignValue.LEFT, AlignValue.LEFT, AlignValue.RIGHT]
+        ['left', 'left', 'right']
       );
     }
 
-    await SunmiPrinter.printerText(SEPARATEUR);
-    await SunmiPrinter.setFontWeight(true);
-    await SunmiPrinter.printColumnsText(
+    await SunmiPrinterLibrary.printText(SEPARATEUR);
+    await SunmiPrinterLibrary.setTextStyle('bold', true);
+    await SunmiPrinterLibrary.printColumnsText(
       ['Total =>', `${Number(ticket.montant_total).toFixed(2)} HTG`],
       [16, 16],
-      [AlignValue.LEFT, AlignValue.RIGHT]
+      ['left', 'right']
     );
-    await SunmiPrinter.setFontWeight(false);
-    await SunmiPrinter.printerText(SEPARATEUR);
+    await SunmiPrinterLibrary.setTextStyle('bold', false);
+    await SunmiPrinterLibrary.printText(SEPARATEUR);
 
     grandTotal += Number(ticket.montant_total);
   }
 
   if (tickets.length > 1) {
-    await SunmiPrinter.lineWrap(1);
-    await SunmiPrinter.setFontWeight(true);
-    await SunmiPrinter.printColumnsText(
+    await SunmiPrinterLibrary.lineWrap(1);
+    await SunmiPrinterLibrary.setTextStyle('bold', true);
+    await SunmiPrinterLibrary.printColumnsText(
       ['Grand Total =>', `${grandTotal.toFixed(2)} HTG`],
       [16, 16],
-      [AlignValue.LEFT, AlignValue.RIGHT]
+      ['left', 'right']
     );
-    await SunmiPrinter.setFontWeight(false);
-    await SunmiPrinter.printerText(SEPARATEUR);
+    await SunmiPrinterLibrary.setTextStyle('bold', false);
+    await SunmiPrinterLibrary.printText(SEPARATEUR);
   }
 
   await imprimerPied();
@@ -175,12 +174,12 @@ export async function imprimerRapportSunmi(titre: string, lignes: LigneRapport[]
   await verifierImprimante();
   await imprimerEntete(entete, titre);
 
-  await SunmiPrinter.setAlignment(AlignValue.LEFT);
+  await SunmiPrinterLibrary.setAlignment('left');
   for (const ligne of lignes) {
-    await SunmiPrinter.printColumnsText([ligne.label, ligne.valeur], [18, 14], [AlignValue.LEFT, AlignValue.RIGHT]);
+    await SunmiPrinterLibrary.printColumnsText([ligne.label, ligne.valeur], [18, 14], ['left', 'right']);
   }
-  await SunmiPrinter.setAlignment(AlignValue.CENTER);
-  await SunmiPrinter.printerText(SEPARATEUR);
+  await SunmiPrinterLibrary.setAlignment('center');
+  await SunmiPrinterLibrary.printText(SEPARATEUR);
 
   await imprimerPied();
 }
@@ -204,20 +203,20 @@ export async function imprimerTransactionsSunmi(
   await verifierImprimante();
   await imprimerEntete(entete, 'Rapport Transaction');
 
-  await SunmiPrinter.setAlignment(AlignValue.LEFT);
-  await SunmiPrinter.printColumnsText(['Solde', `${resume.balance.toFixed(0)} HTG`], [18, 14], [AlignValue.LEFT, AlignValue.RIGHT]);
-  await SunmiPrinter.printColumnsText(['Total Recharge', `${resume.totalRecharge.toFixed(0)} HTG`], [18, 14], [AlignValue.LEFT, AlignValue.RIGHT]);
-  await SunmiPrinter.printColumnsText(['Total Retrait', `${resume.totalRetrait.toFixed(0)} HTG`], [18, 14], [AlignValue.LEFT, AlignValue.RIGHT]);
-  await SunmiPrinter.setAlignment(AlignValue.CENTER);
-  await SunmiPrinter.printerText(SEPARATEUR);
+  await SunmiPrinterLibrary.setAlignment('left');
+  await SunmiPrinterLibrary.printColumnsText(['Solde', `${resume.balance.toFixed(0)} HTG`], [18, 14], ['left', 'right']);
+  await SunmiPrinterLibrary.printColumnsText(['Total Recharge', `${resume.totalRecharge.toFixed(0)} HTG`], [18, 14], ['left', 'right']);
+  await SunmiPrinterLibrary.printColumnsText(['Total Retrait', `${resume.totalRetrait.toFixed(0)} HTG`], [18, 14], ['left', 'right']);
+  await SunmiPrinterLibrary.setAlignment('center');
+  await SunmiPrinterLibrary.printText(SEPARATEUR);
 
-  await SunmiPrinter.setAlignment(AlignValue.LEFT);
+  await SunmiPrinterLibrary.setAlignment('left');
   for (const t of transactions) {
-    await SunmiPrinter.printColumnsText([t.ref_code, t.type], [18, 14], [AlignValue.LEFT, AlignValue.RIGHT]);
-    await SunmiPrinter.printColumnsText([t.dateAffichee, `${t.montant.toFixed(0)} HTG`], [18, 14], [AlignValue.LEFT, AlignValue.RIGHT]);
+    await SunmiPrinterLibrary.printColumnsText([t.ref_code, t.type], [18, 14], ['left', 'right']);
+    await SunmiPrinterLibrary.printColumnsText([t.dateAffichee, `${t.montant.toFixed(0)} HTG`], [18, 14], ['left', 'right']);
   }
-  await SunmiPrinter.setAlignment(AlignValue.CENTER);
-  await SunmiPrinter.printerText(SEPARATEUR);
+  await SunmiPrinterLibrary.setAlignment('center');
+  await SunmiPrinterLibrary.printText(SEPARATEUR);
 
   await imprimerPied();
 }
