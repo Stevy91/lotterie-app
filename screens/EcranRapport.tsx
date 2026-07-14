@@ -111,7 +111,7 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
       const config = await obtenirConfiguration();
       await imprimerRapportSunmi(titre, lignes, {
         nomCompagnie: config.app_name ?? 'Lotterie',
-        adresse: config.adresse,
+        adresse: utilisateur.adresse ?? config.adresse,
         posId: String(utilisateur.id),
         vendeurNom: utilisateur.name,
         logoUrl: config.logo_url ?? utilisateur.logo_url ?? undefined,

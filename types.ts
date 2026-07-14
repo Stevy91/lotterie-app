@@ -53,6 +53,7 @@ export interface AgentResponse {
   id: number;
   name: string;
   username: string;
+  adresse: string | null;
   parent: { id: number; name: string } | null;
 }
 

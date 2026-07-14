@@ -88,7 +88,7 @@ export default function EcranCompte({ utilisateur, onRetour }: Props) {
         })),
         {
           nomCompagnie: config.app_name ?? 'Lotterie',
-          adresse: config.adresse,
+          adresse: utilisateur.adresse ?? config.adresse,
           posId: String(utilisateur.id),
           vendeurNom: utilisateur.name,
           logoUrl: config.logo_url ?? utilisateur.logo_url ?? undefined,
