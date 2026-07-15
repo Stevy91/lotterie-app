@@ -19,10 +19,10 @@ export interface LigneRapport {
   valeur: string;
 }
 
-// "MA Auto" -> "MA", "L3 Auto" -> "L3", "BPaire" -> "BP", "Lo" -> "Lo", "3 Chif" -> "3"
-function abregerTypeJeu(nom: string): string {
-  const premierMot = nom.trim().split(' ')[0];
-  return premierMot.length > 3 ? premierMot.slice(0, 2) : premierMot;
+// Meme convention que le reste de l'app (EcranDetailFiche) : un 2e numero
+// signifie Marriage ("MA"), sinon c'est une Boule simple ("BO").
+function abregerTypeJeu(numero2: string | null | undefined): string {
+  return numero2 ? 'MA' : 'BO';
 }
 
 function formaterDate(date: Date): string {
@@ -125,7 +125,7 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
         await SunmiPrinterLibrary.printText(`${zoneNom}\n`);
       }
 
-      const abrev = abregerTypeJeu(mise.type_jeu.nom);
+      const abrev = abregerTypeJeu(mise.numero_2);
       const numero = mise.numero_2 ? `${mise.numero}*${mise.numero_2}` : mise.numero;
       const montant = Number(mise.montant);
       const montantTexte = montant === 0 ? 'gratis' : `${montant.toFixed(2)} HTG`;
