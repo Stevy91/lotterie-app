@@ -19,10 +19,15 @@ export interface LigneRapport {
   valeur: string;
 }
 
-// Meme convention que le reste de l'app (EcranDetailFiche) : un 2e numero
-// signifie Marriage ("MA"), sinon c'est une Boule simple ("BO").
-function abregerTypeJeu(numero2: string | null | undefined): string {
-  return numero2 ? 'MA' : 'BO';
+// "MA Auto" -> "MA", "L3 Auto" -> "L3", "BPaire" -> "BP", "Reverse" -> "RE",
+// "Lo" -> "LO", "P5 Auto" -> "P5" : reflete le vrai type de jeu au lieu de
+// tout regrouper sous "BO" des qu'il n'y a pas de 2e numero.
+function abregerTypeJeu(nomTypeJeu: string): string {
+  const sansAuto = nomTypeJeu.replace(/\s*Auto$/i, '').trim();
+  if (sansAuto.length <= 3) {
+    return sansAuto.toUpperCase();
+  }
+  return sansAuto.replace(/\s+/g, '').slice(0, 2).toUpperCase();
 }
 
 function formaterDate(date: Date): string {
@@ -79,7 +84,7 @@ async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> 
   await SunmiPrinterLibrary.setTextStyle('bold', false);
   await SunmiPrinterLibrary.lineWrap(1);
 
-  await SunmiPrinterLibrary.setAlignment('left');
+  await SunmiPrinterLibrary.setAlignment('center');
   await SunmiPrinterLibrary.printText(`POS: ${entete.posId}\n`);
   await SunmiPrinterLibrary.printText(`Vendeur: ${entete.vendeurNom}\n`);
   if (entete.adresse) {
@@ -87,7 +92,6 @@ async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> 
     await SunmiPrinterLibrary.printText(`Central: ${entete.nomCompagnie}\n`);
   }
   await SunmiPrinterLibrary.printText(`Date: ${formaterDate(new Date())}\n`);
-  await SunmiPrinterLibrary.setAlignment('center');
   await SunmiPrinterLibrary.printText(SEPARATEUR);
 }
 
@@ -114,18 +118,15 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
   let grandTotal = 0;
 
   for (const ticket of tickets) {
-    await SunmiPrinterLibrary.printText(`#ticket: ${ticket.numero_ticket}\n`);
+    const zoneNom = ticket.mises[0]?.tirage.loterie.nom ?? '';
+    await SunmiPrinterLibrary.setAlignment('center');
+    // Un seul appel (numero de ticket + zone) pour eviter tout espace
+    // parasite entre les deux lignes.
+    await SunmiPrinterLibrary.printText(`#ticket: ${ticket.numero_ticket}\n${zoneNom}\n`);
 
-    const zonesImprimees = new Set<string>();
-
+    await SunmiPrinterLibrary.setAlignment('left');
     for (const mise of ticket.mises) {
-      const zoneNom = mise.tirage.loterie.nom;
-      if (!zonesImprimees.has(zoneNom)) {
-        zonesImprimees.add(zoneNom);
-        await SunmiPrinterLibrary.printText(`${zoneNom}\n`);
-      }
-
-      const abrev = abregerTypeJeu(mise.numero_2);
+      const abrev = abregerTypeJeu(mise.type_jeu.nom);
       const numero = mise.numero_2 ? `${mise.numero}*${mise.numero_2}` : mise.numero;
       const montant = Number(mise.montant);
       const montantTexte = montant === 0 ? 'gratis' : `${montant.toFixed(2)} HTG`;

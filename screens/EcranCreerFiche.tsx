@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -68,6 +68,16 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
 
   const [modalPaireVisible, setModalPaireVisible] = useState(false);
   const [montantPaireModal, setMontantPaireModal] = useState('');
+  const refInputPaire = useRef<TextInput>(null);
+
+  // autoFocus est peu fiable dans un <Modal> sur Android (le clavier ne sort
+  // pas toujours) : on force le focus une fois la modale reellement affichee.
+  useEffect(() => {
+    if (modalPaireVisible) {
+      const id = setTimeout(() => refInputPaire.current?.focus(), 150);
+      return () => clearTimeout(id);
+    }
+  }, [modalPaireVisible]);
 
   // Edition d'une ligne individuelle (numero / numero2 / montant)
   const [ligneEnEdition, setLigneEnEdition] = useState<Ligne | null>(null);
@@ -78,10 +88,26 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
   // Edition groupee (toutes les lignes Bo/Ma d'une zone) : nouveau montant applique a chacune
   const [groupeEnEdition, setGroupeEnEdition] = useState<{ zoneId: number; label: string } | null>(null);
   const [montantEditionGroupe, setMontantEditionGroupe] = useState('');
+  const refInputGroupe = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (groupeEnEdition) {
+      const id = setTimeout(() => refInputGroupe.current?.focus(), 150);
+      return () => clearTimeout(id);
+    }
+  }, [groupeEnEdition]);
 
   // Edition de toute la zone : nouveau montant applique a toutes les lignes de la zone
   const [zoneEnEdition, setZoneEnEdition] = useState<number | null>(null);
   const [montantEditionZone, setMontantEditionZone] = useState('');
+  const refInputZone = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (zoneEnEdition !== null) {
+      const id = setTimeout(() => refInputZone.current?.focus(), 150);
+      return () => clearTimeout(id);
+    }
+  }, [zoneEnEdition]);
 
   useEffect(() => {
     chargerDonnees();
@@ -949,11 +975,11 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
           <View style={styles.carteModal}>
             <Text style={styles.titreModal}>{titreModalAuto()}</Text>
             <TextInput
+              ref={refInputPaire}
               style={styles.champInput}
               keyboardType="decimal-pad"
               value={montantPaireModal}
               onChangeText={(texte) => setMontantPaireModal(nettoyerMontant(texte))}
-              autoFocus
             />
             <View style={styles.boutonsModal}>
               <TouchableOpacity
@@ -1032,11 +1058,11 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
           <View style={styles.carteModal}>
             <Text style={styles.titreModal}>Nouveau montant pour les lignes {groupeEnEdition?.label}</Text>
             <TextInput
+              ref={refInputGroupe}
               style={styles.champInput}
               keyboardType="decimal-pad"
               value={montantEditionGroupe}
               onChangeText={(texte) => setMontantEditionGroupe(nettoyerMontant(texte))}
-              autoFocus
             />
             <View style={styles.boutonsModal}>
               <TouchableOpacity
@@ -1059,11 +1085,11 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
           <View style={styles.carteModal}>
             <Text style={styles.titreModal}>Nouveau montant pour toute la zone</Text>
             <TextInput
+              ref={refInputZone}
               style={styles.champInput}
               keyboardType="decimal-pad"
               value={montantEditionZone}
               onChangeText={(texte) => setMontantEditionZone(nettoyerMontant(texte))}
-              autoFocus
             />
             <View style={styles.boutonsModal}>
               <TouchableOpacity
