@@ -10,10 +10,13 @@ export interface ConfigurationApp {
 
 export async function obtenirConfiguration(): Promise<ConfigurationApp> {
   try {
-    // Parametre anti-cache : un proxy reseau (mobile) ou un cache CDN en
-    // amont peut servir une reponse perimee pour cette URL sinon (vu sur le
-    // terrain : app_name/text_fiche periodiquement en retard sur le backoffice).
-    const reponse = await fetchAvecTimeout(`${API_URL}/configuration?_=${Date.now()}`);
+    // Parametre + en-tetes anti-cache : un proxy transparent sur le reseau
+    // mobile (frequent sur certains operateurs) peut servir une reponse
+    // perimee pour cette URL sinon (vu sur le terrain : app_name/text_fiche
+    // periodiquement en retard sur le backoffice).
+    const reponse = await fetchAvecTimeout(`${API_URL}/configuration?_=${Date.now()}`, {
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    });
     if (!reponse.ok) return {};
     return await reponse.json();
   } catch {

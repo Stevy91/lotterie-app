@@ -131,7 +131,9 @@ function EcranConnexion({ onConnecte }: { onConnecte: (u: Utilisateur) => void }
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAvecTimeout(`${API_URL}/configuration?_=${Date.now()}`)
+    fetchAvecTimeout(`${API_URL}/configuration?_=${Date.now()}`, {
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    })
       .then((reponse) => reponse.json())
       .then((data) => {
         setNomCompagnie(data.app_name ?? null);
