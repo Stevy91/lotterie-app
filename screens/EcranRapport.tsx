@@ -114,7 +114,7 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
         adresse: utilisateur.adresse ?? config.adresse,
         posId: String(utilisateur.id),
         vendeurNom: utilisateur.name,
-        logoUrl: config.logo_url ?? utilisateur.logo_url ?? undefined,
+        logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
       });
     } catch (e: any) {
       alerteSimple('Impression impossible', e.message ?? "L'imprimante Sunmi n'est pas disponible sur cet appareil.");

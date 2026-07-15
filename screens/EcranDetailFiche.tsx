@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
+import { Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
 import { genererRecuHtml } from '../receipt';
 import { imprimerFichesSunmi } from '../sunmiPrint';
@@ -11,6 +12,7 @@ import { Tirage, TicketResponse } from '../types';
 
 interface Props {
   ticketId: number;
+  utilisateur: Utilisateur;
   onRetour: () => void;
 }
 
@@ -18,7 +20,7 @@ function labelDe(numero2: string | null): string {
   return numero2 ? 'MA' : 'BO';
 }
 
-export default function EcranDetailFiche({ ticketId, onRetour }: Props) {
+export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Props) {
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
   const [chargement, setChargement] = useState(true);
   const [enCours, setEnCours] = useState(false);
@@ -147,7 +149,7 @@ export default function EcranDetailFiche({ ticketId, onRetour }: Props) {
         adresse: ticket.agent?.adresse ?? config.adresse,
         posId: String(ticket.agent?.id ?? ''),
         vendeurNom,
-        logoUrl: config.logo_url,
+        logoUrl: utilisateur.logo_url ?? config.logo_url,
       });
     } catch (e) {
       // Imprimante Sunmi indisponible (Expo Go, appareil sans imprimante...) :

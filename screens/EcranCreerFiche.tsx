@@ -647,7 +647,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         adresse: ts[0].agent?.adresse ?? config.adresse,
         posId: String(utilisateur.id),
         vendeurNom: nomVendeur(ts[0]),
-        logoUrl: config.logo_url ?? utilisateur.logo_url ?? undefined,
+        logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
       });
     } catch (e) {
       // Imprimante Sunmi indisponible (Expo Go, appareil sans imprimante...) :
