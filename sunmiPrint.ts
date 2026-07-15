@@ -67,9 +67,18 @@ async function verifierImprimante(): Promise<void> {
   if (Platform.OS !== 'android') {
     throw new Error("L'impression sur l'imprimante Sunmi n'est disponible que sur Android.");
   }
-  const pret = await SunmiPrinterLibrary.prepare();
+
+  let pret: boolean;
+  try {
+    pret = await SunmiPrinterLibrary.prepare();
+  } catch (e: any) {
+    // On remonte le detail brut de l'erreur native : le message par defaut
+    // masquait la vraie cause quand l'erreur native n'a pas de .message.
+    throw new Error(`prepare() a echoue: ${e?.message || e?.code || JSON.stringify(e) || 'erreur inconnue'}`);
+  }
+
   if (!pret) {
-    throw new Error('Aucune imprimante Sunmi detectee sur cet appareil.');
+    throw new Error('Aucune imprimante Sunmi detectee sur cet appareil (prepare a retourne false).');
   }
 }
 
