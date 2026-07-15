@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import * as SunmiPrinterLibrary from '@mitsuharu/react-native-sunmi-printer-library';
+import * as ImageManipulator from 'expo-image-manipulator';
 
-import { fetchAvecTimeout } from './fetchAvecTimeout';
 import { TicketResponse } from './types';
 
 const LARGEUR_PAPIER_PIXELS = 384; // papier 58mm
@@ -48,15 +48,17 @@ function formaterDate(date: Date): string {
 
 async function logoEnDataUri(logoUrl: string): Promise<string | null> {
   try {
-    const reponse = await fetchAvecTimeout(logoUrl);
-    const blob = await reponse.blob();
-    return await new Promise((resolve, reject) => {
-      const lecteur = new FileReader();
-      lecteur.onerror = reject;
-      // printImage attend l'URI de donnees complete ("data:image/...;base64,...").
-      lecteur.onload = () => resolve((lecteur.result as string) ?? null);
-      lecteur.readAsDataURL(blob);
-    });
+    // Les logos uploades par les proprietaires peuvent faire plusieurs
+    // milliers de pixels de large : on les redimensionne a la largeur du
+    // papier avant de les envoyer au SDK d'impression, sinon le decodage
+    // d'une trop grande image plante silencieusement sur le Sunmi (peu de RAM).
+    const resultat = await ImageManipulator.manipulateAsync(
+      logoUrl,
+      [{ resize: { width: LARGEUR_PAPIER_PIXELS } }],
+      { base64: true, format: ImageManipulator.SaveFormat.PNG }
+    );
+    if (!resultat.base64) return null;
+    return `data:image/png;base64,${resultat.base64}`;
   } catch {
     // Une erreur de logo (reseau, format...) ne doit jamais bloquer l'impression.
     return null;
