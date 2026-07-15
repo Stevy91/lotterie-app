@@ -151,6 +151,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
         posId: String(ticket.agent?.id ?? ''),
         vendeurNom,
         logoUrl: utilisateur.logo_url ?? config.logo_url,
+        texteFiche: config.text_fiche,
       });
     } catch (e) {
       // Imprimante Sunmi indisponible (Expo Go, appareil sans imprimante...) :

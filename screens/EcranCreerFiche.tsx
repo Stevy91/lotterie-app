@@ -48,6 +48,9 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
   const [tirages, setTirages] = useState<Tirage[]>([]);
   const [typesJeux, setTypesJeux] = useState<TypeJeu[]>([]);
   const [chargement, setChargement] = useState(true);
+  // Si le proprietaire a active "Mariage gratuit" dans Configuration, toute
+  // ligne Marriage (avec un 2e numero) est enregistree a 0 au lieu du montant saisi.
+  const [mariageGratuit, setMariageGratuit] = useState(false);
 
   const [tirageSelectionnes, setTirageSelectionnes] = useState<Tirage[]>([]);
   const [typeJeuSelectionne, setTypeJeuSelectionne] = useState<TypeJeu | null>(null);
@@ -125,6 +128,9 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       setTirages(dataTirages);
       setTypesJeux(dataTypesJeux);
       setTirageSelectionnes(dataTirages[0] ? [dataTirages[0]] : []);
+
+      const config = await obtenirConfiguration();
+      setMariageGratuit(config.mariage_gratuit === 'Oui');
     } catch (e) {
       alerteSimple(
         'Connexion impossible',
@@ -256,11 +262,15 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         const resultat = [...prev];
         for (const tirage of tirageSelectionnes) {
           for (const p of paires) {
+            // Marriage gratuit (Configuration du proprietaire) : une ligne
+            // avec 2e numero s'enregistre a 0, peu importe le montant saisi.
+            const montantEffectif = p.numero2 !== undefined && mariageGratuit ? 0 : montantNombre;
+
             const index = resultat.findIndex(
               (l) => l.tirage.id === tirage.id && l.numero === p.numero && l.numero2 === p.numero2
             );
             if (index >= 0) {
-              resultat[index] = { ...resultat[index], montant: resultat[index].montant + montantNombre };
+              resultat[index] = { ...resultat[index], montant: resultat[index].montant + montantEffectif };
             } else {
               resultat.push({
                 localId: `${Date.now()}-${tirage.id}-${p.numero}-${p.numero2 ?? ''}-${Math.random()}`,
@@ -268,7 +278,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
                 typeJeu,
                 numero: p.numero,
                 numero2: p.numero2,
-                montant: montantNombre,
+                montant: montantEffectif,
               });
             }
           }
@@ -649,6 +659,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         posId: String(utilisateur.id),
         vendeurNom: nomVendeur(ts[0]),
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
+        texteFiche: config.text_fiche,
       });
     } catch (e) {
       // Imprimante Sunmi indisponible (Expo Go, appareil sans imprimante...) :

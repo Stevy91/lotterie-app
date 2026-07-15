@@ -93,6 +93,7 @@ export default function EcranCompte({ utilisateur, onRetour }: Props) {
           posId: String(utilisateur.id),
           vendeurNom: utilisateur.name,
           logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
+          texteFiche: config.text_fiche,
         }
       );
     } catch (e: any) {

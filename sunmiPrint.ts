@@ -15,6 +15,8 @@ export interface EnteteRecu {
   posId: string;
   vendeurNom: string;
   logoUrl?: string | null;
+  // Texte configure par le proprietaire, imprime en bas de chaque fiche.
+  texteFiche?: string | null;
 }
 
 export interface LigneRapport {
@@ -102,7 +104,11 @@ async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> 
   await SunmiPrinterLibrary.printText(SEPARATEUR);
 }
 
-async function imprimerPied(): Promise<void> {
+async function imprimerPied(texteFiche?: string | null): Promise<void> {
+  if (texteFiche) {
+    await SunmiPrinterLibrary.setAlignment('center');
+    await SunmiPrinterLibrary.printText(`${texteFiche}\n`);
+  }
   await SunmiPrinterLibrary.setAlignment('left');
   await SunmiPrinterLibrary.printText(`Impression: ${formaterDate(new Date())}\n`);
   await SunmiPrinterLibrary.lineWrap(3);
@@ -169,7 +175,7 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
     await SunmiPrinterLibrary.printText(SEPARATEUR);
   }
 
-  await imprimerPied();
+  await imprimerPied(entete.texteFiche);
 }
 
 /**
@@ -187,7 +193,7 @@ export async function imprimerRapportSunmi(titre: string, lignes: LigneRapport[]
   await SunmiPrinterLibrary.setAlignment('center');
   await SunmiPrinterLibrary.printText(SEPARATEUR);
 
-  await imprimerPied();
+  await imprimerPied(entete.texteFiche);
 }
 
 export interface LigneTransaction {
@@ -224,5 +230,5 @@ export async function imprimerTransactionsSunmi(
   await SunmiPrinterLibrary.setAlignment('center');
   await SunmiPrinterLibrary.printText(SEPARATEUR);
 
-  await imprimerPied();
+  await imprimerPied(entete.texteFiche);
 }

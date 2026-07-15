@@ -122,6 +122,7 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
         posId: String(utilisateur.id),
         vendeurNom: parent ? `${parent} ${soi}` : soi,
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
+        texteFiche: config.text_fiche,
       });
     } catch (e: any) {
       alerteSimple('Impression impossible', e.message ?? "L'imprimante Sunmi n'est pas disponible sur cet appareil.");
