@@ -1,10 +1,11 @@
 import { API_URL } from './config';
 import { obtenirToken } from './auth';
+import { fetchAvecTimeout } from './fetchAvecTimeout';
 
 export async function appelApi(chemin: string, options: RequestInit = {}): Promise<Response> {
   const token = await obtenirToken();
 
-  return fetch(`${API_URL}${chemin}`, {
+  return fetchAvecTimeout(`${API_URL}${chemin}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -20,12 +21,12 @@ export async function appelApi(chemin: string, options: RequestInit = {}): Promi
 export async function appelApiFichier(chemin: string, formData: FormData): Promise<Response> {
   const token = await obtenirToken();
 
-  return fetch(`${API_URL}${chemin}`, {
+  return fetchAvecTimeout(`${API_URL}${chemin}`, {
     method: 'POST',
     body: formData,
     headers: {
       Accept: 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-  });
+  }, 30000);
 }

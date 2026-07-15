@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as SunmiPrinterLibrary from '@mitsuharu/react-native-sunmi-printer-library';
 
+import { fetchAvecTimeout } from './fetchAvecTimeout';
 import { TicketResponse } from './types';
 
 const LARGEUR_PAPIER_PIXELS = 384; // papier 58mm
@@ -47,7 +48,7 @@ function formaterDate(date: Date): string {
 
 async function logoEnDataUri(logoUrl: string): Promise<string | null> {
   try {
-    const reponse = await fetch(logoUrl);
+    const reponse = await fetchAvecTimeout(logoUrl);
     const blob = await reponse.blob();
     return await new Promise((resolve, reject) => {
       const lecteur = new FileReader();

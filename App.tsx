@@ -10,6 +10,7 @@ import { alerteSimple } from './alerte';
 import { appelApi } from './api';
 import { connecter, deconnecter, mettreAJourUtilisateurStocke, recupererSession, Utilisateur } from './auth';
 import { API_URL } from './config';
+import { fetchAvecTimeout } from './fetchAvecTimeout';
 import BarreNavigation, { Onglet } from './screens/BarreNavigation';
 import EcranAccueil, { Destination } from './screens/EcranAccueil';
 import EcranCreerFiche from './screens/EcranCreerFiche';
@@ -130,7 +131,7 @@ function EcranConnexion({ onConnecte }: { onConnecte: (u: Utilisateur) => void }
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${API_URL}/configuration`)
+    fetchAvecTimeout(`${API_URL}/configuration`)
       .then((reponse) => reponse.json())
       .then((data) => {
         setNomCompagnie(data.app_name ?? null);
@@ -174,7 +175,7 @@ function EcranConnexion({ onConnecte }: { onConnecte: (u: Utilisateur) => void }
 
       <View style={styles.carteConnexion}>
         {logoUrl ? (
-          <Image source={{ }} style={styles.logoConnexion} resizeMode="contain" />
+          <Image source={{ uri: logoUrl }} style={styles.logoConnexion} resizeMode="contain" />
         ) : (
           <View style={styles.logoPlaceholderConnexion}>
             <Ionicons name="storefront-outline" size={30} color="#bbb" />

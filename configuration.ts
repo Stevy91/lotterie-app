@@ -1,4 +1,5 @@
 import { API_URL } from './config';
+import { fetchAvecTimeout } from './fetchAvecTimeout';
 
 export interface ConfigurationApp {
   app_name?: string;
@@ -9,7 +10,7 @@ export interface ConfigurationApp {
 
 export async function obtenirConfiguration(): Promise<ConfigurationApp> {
   try {
-    const reponse = await fetch(`${API_URL}/configuration`);
+    const reponse = await fetchAvecTimeout(`${API_URL}/configuration`);
     if (!reponse.ok) return {};
     return await reponse.json();
   } catch {

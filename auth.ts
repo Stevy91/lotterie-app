@@ -1,4 +1,5 @@
 import { API_URL } from './config';
+import { fetchAvecTimeout } from './fetchAvecTimeout';
 import { getItem, removeItem, setItem } from './storage';
 
 const CLE_TOKEN = 'auth_token';
@@ -19,12 +20,15 @@ export interface Utilisateur {
 export async function connecter(username: string, password: string): Promise<Utilisateur> {
   let reponse: Response;
   try {
-    reponse = await fetch(`${API_URL}/login`, {
+    reponse = await fetchAvecTimeout(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ username, password }),
     });
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.message?.includes('trop de temps')) {
+      throw e;
+    }
     // La requete n'a meme pas atteint le serveur (reseau coupe, serveur eteint...) :
     // on evite d'afficher le texte technique brut du navigateur ("Failed to fetch").
     throw new Error("Impossible de contacter le serveur. Verifie ta connexion et reessaie dans un instant.");
@@ -47,7 +51,7 @@ export async function deconnecter(): Promise<void> {
   const token = await getItem(CLE_TOKEN);
 
   if (token) {
-    await fetch(`${API_URL}/logout`, {
+    await fetchAvecTimeout(`${API_URL}/logout`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     }).catch(() => null);
