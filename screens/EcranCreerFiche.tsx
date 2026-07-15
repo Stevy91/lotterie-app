@@ -62,7 +62,9 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
   const [miseCheckee, setMiseCheckee] = useState(false);
 
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
-  const [ticket, setTicket] = useState<TicketResponse | null>(null);
+  // Un client qui joue dans plusieurs zones (tirages) obtient une fiche
+  // separee par zone, imprimees ensemble avec un Grand Total.
+  const [tickets, setTickets] = useState<TicketResponse[]>([]);
 
   const [modalPaireVisible, setModalPaireVisible] = useState(false);
   const [montantPaireModal, setMontantPaireModal] = useState('');
@@ -531,28 +533,41 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       return;
     }
 
+    // Une fiche par zone (tirage) : un client qui joue dans 2 zones obtient
+    // automatiquement 2 tickets, imprimes ensemble avec un Grand Total.
+    const idsZones = [...new Set(lignes.map((l) => l.tirage.id))];
+
     try {
       setEnvoiEnCours(true);
-      const reponse = await appelApi('/tickets', {
-        method: 'POST',
-        body: JSON.stringify({
-          mises: lignes.map((l) => ({
-            tirage_id: l.tirage.id,
-            type_jeu_id: l.typeJeu.id,
-            numero: l.numero,
-            numero_2: l.numero2 ?? null,
-            montant: l.montant,
-          })),
-        }),
-      });
+      const resultats: TicketResponse[] = [];
 
-      if (!reponse.ok) {
-        const erreur = await reponse.json();
-        throw new Error(erreur.message ?? 'Erreur inconnue');
+      for (const idZone of idsZones) {
+        const lignesZone = lignes.filter((l) => l.tirage.id === idZone);
+        const reponse = await appelApi('/tickets', {
+          method: 'POST',
+          body: JSON.stringify({
+            mises: lignesZone.map((l) => ({
+              tirage_id: l.tirage.id,
+              type_jeu_id: l.typeJeu.id,
+              numero: l.numero,
+              numero_2: l.numero2 ?? null,
+              montant: l.montant,
+            })),
+          }),
+        });
+
+        if (!reponse.ok) {
+          const erreur = await reponse.json();
+          // Si une zone precedente a deja ete enregistree, on l'annule pour
+          // ne pas laisser une fiche invisible deduite du solde.
+          await Promise.all(resultats.map((t) => appelApi(`/tickets/${t.id}/annuler`, { method: 'POST' }).catch(() => {})));
+          throw new Error(erreur.message ?? 'Erreur inconnue');
+        }
+
+        resultats.push(await reponse.json());
       }
 
-      const data: TicketResponse = await reponse.json();
-      setTicket(data);
+      setTickets(resultats);
     } catch (e: any) {
       alerteSimple('Erreur', e.message ?? 'Impossible de creer le ticket.');
     } finally {
@@ -561,29 +576,30 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
   }
 
   function nouveauTicket() {
-    setTicket(null);
+    setTickets([]);
     setLignes([]);
   }
 
   function confirmerSuppressionTicket() {
-    if (!ticket) return;
-    alerteConfirmation(
-      'Supprimer la fiche',
-      `Supprimer la fiche ${ticket.numero_ticket} ?`,
-      supprimerTicket,
-      'Oui'
-    );
+    if (tickets.length === 0) return;
+    const texte = tickets.length > 1
+      ? `Supprimer les ${tickets.length} fiches (${tickets.map((t) => t.numero_ticket).join(', ')}) ?`
+      : `Supprimer la fiche ${tickets[0].numero_ticket} ?`;
+    alerteConfirmation('Supprimer la fiche', texte, supprimerTicket, 'Oui');
   }
 
   async function supprimerTicket() {
-    if (!ticket) return;
+    if (tickets.length === 0) return;
     try {
-      const reponse = await appelApi(`/tickets/${ticket.id}/annuler`, { method: 'POST' });
-      if (!reponse.ok) {
-        const erreur = await reponse.json();
+      const resultats = await Promise.all(
+        tickets.map((t) => appelApi(`/tickets/${t.id}/annuler`, { method: 'POST' }))
+      );
+      const echec = resultats.find((r) => !r.ok);
+      if (echec) {
+        const erreur = await echec.json();
         throw new Error(erreur.message);
       }
-      setTicket(null);
+      setTickets([]);
       setLignes([]);
     } catch (e: any) {
       alerteSimple('Erreur', e.message ?? "Impossible de supprimer cette fiche.");
@@ -596,50 +612,55 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     return parent ? `${parent} ${soi}` : soi;
   }
 
-  async function imprimerFicheThermique(t: TicketResponse) {
+  async function imprimerFicheThermique(ts: TicketResponse[]) {
+    if (ts.length === 0) return;
     try {
       const config = await obtenirConfiguration();
-      await imprimerFichesSunmi([t], {
+      await imprimerFichesSunmi(ts, {
         nomCompagnie: config.app_name ?? 'Lotterie',
-        adresse: t.agent?.adresse ?? config.adresse,
+        adresse: ts[0].agent?.adresse ?? config.adresse,
         posId: String(utilisateur.id),
-        vendeurNom: nomVendeur(t),
+        vendeurNom: nomVendeur(ts[0]),
         logoUrl: config.logo_url ?? utilisateur.logo_url ?? undefined,
       });
     } catch (e) {
       // Imprimante Sunmi indisponible (Expo Go, appareil sans imprimante...) :
-      // repli sur le dialogue d'impression standard Android/iOS.
-      await Print.printAsync({ html: genererRecuHtml(t) });
+      // repli sur le dialogue d'impression standard Android/iOS, une fiche a la fois.
+      for (const t of ts) {
+        await Print.printAsync({ html: genererRecuHtml(t) });
+      }
     }
   }
 
   async function imprimer() {
-    if (!ticket) return;
-    await imprimerFicheThermique(ticket);
+    await imprimerFicheThermique(tickets);
   }
 
   async function partager() {
-    if (!ticket) return;
-    const { uri } = await Print.printToFileAsync({ html: genererRecuHtml(ticket) });
+    if (tickets.length === 0) return;
+    if (tickets.length > 1) {
+      alerteSimple('Plusieurs fiches', 'Le partage ne fonctionne que pour une fiche a la fois : partage de la premiere.');
+    }
+    const { uri } = await Print.printToFileAsync({ html: genererRecuHtml(tickets[0]) });
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(uri);
     }
   }
 
   // Apercu de la fiche en cours de saisie (avant validation / envoi au serveur)
-  function construirePreviewTicket(): TicketResponse {
+  function construirePreviewTicket(lignesTicket: Ligne[], index: number): TicketResponse {
     return {
-      id: 0,
-      numero_ticket: 'BROUILLON',
+      id: index,
+      numero_ticket: `BROUILLON-${index + 1}`,
       nom_client: null,
       telephone_client: null,
-      montant_total: total.toFixed(2),
+      montant_total: lignesTicket.reduce((s, l) => s + l.montant, 0).toFixed(2),
       gain_total: '0',
       statut: 'en_attente',
       paye: false,
       paye_le: null,
       created_at: new Date().toISOString(),
-      mises: lignes.map((l, index) => ({
+      mises: lignesTicket.map((l, index) => ({
         id: index,
         numero: l.numero,
         numero_2: l.numero2 ?? null,
@@ -653,12 +674,21 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     };
   }
 
+  // Meme decoupage par zone que la vraie soumission, pour que l'apercu
+  // corresponde exactement aux fiches qui seront reellement creees.
+  function construirePreviewTickets(): TicketResponse[] {
+    const idsZones = [...new Set(lignes.map((l) => l.tirage.id))];
+    return idsZones.map((idZone, index) =>
+      construirePreviewTicket(lignes.filter((l) => l.tirage.id === idZone), index)
+    );
+  }
+
   async function imprimerApercu() {
     if (lignes.length === 0) {
       alerteSimple('Fiche vide', "Ajoute au moins une ligne avant d'imprimer.");
       return;
     }
-    await imprimerFicheThermique(construirePreviewTicket());
+    await imprimerFicheThermique(construirePreviewTickets());
   }
 
   if (chargement) {
@@ -670,22 +700,33 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     );
   }
 
-  if (ticket) {
+  if (tickets.length > 0) {
+    const grandTotal = tickets.reduce((s, t) => s + Number(t.montant_total), 0);
+
     return (
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.titreRecu}>Ticket cree</Text>
-        <Text style={styles.numeroTicket}>{ticket.numero_ticket}</Text>
+        <Text style={styles.titreRecu}>{tickets.length > 1 ? `${tickets.length} tickets crees` : 'Ticket cree'}</Text>
 
-        {ticket.mises.map((mise) => (
-          <View key={mise.id} style={styles.ligneRecu}>
-            <Text>
-              {mise.tirage.loterie.nom} - {mise.type_jeu.nom} - {mise.numero_2 ? `${mise.numero} x ${mise.numero_2}` : mise.numero}
-            </Text>
-            <Text>{Number(mise.montant).toFixed(2)}</Text>
+        {tickets.map((t) => (
+          <View key={t.id}>
+            <Text style={styles.numeroTicket}>{t.numero_ticket}</Text>
+
+            {t.mises.map((mise) => (
+              <View key={mise.id} style={styles.ligneRecu}>
+                <Text>
+                  {mise.tirage.loterie.nom} - {mise.type_jeu.nom} - {mise.numero_2 ? `${mise.numero} x ${mise.numero_2}` : mise.numero}
+                </Text>
+                <Text>{Number(mise.montant).toFixed(2)}</Text>
+              </View>
+            ))}
+
+            <Text style={styles.totalRecu}>Total: {Number(t.montant_total).toFixed(2)}</Text>
           </View>
         ))}
 
-        <Text style={styles.totalRecu}>Total: {Number(ticket.montant_total).toFixed(2)}</Text>
+        {tickets.length > 1 && (
+          <Text style={[styles.totalRecu, { marginTop: 8 }]}>Grand Total: {grandTotal.toFixed(2)}</Text>
+        )}
 
         <TouchableOpacity style={styles.boutonPlein} onPress={imprimer}>
           <Text style={styles.boutonPleinTexte}>Imprimer</Text>

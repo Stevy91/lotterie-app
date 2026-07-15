@@ -114,7 +114,6 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
   let grandTotal = 0;
 
   for (const ticket of tickets) {
-    await SunmiPrinterLibrary.lineWrap(1);
     await SunmiPrinterLibrary.printText(`#ticket: ${ticket.numero_ticket}\n`);
 
     const zonesImprimees = new Set<string>();
@@ -133,7 +132,7 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
 
       await SunmiPrinterLibrary.printColumnsText(
         [abrev, numero, `=> ${montantTexte}`],
-        [4, 10, 18],
+        [3, 9, 14],
         ['left', 'left', 'right']
       );
     }
@@ -142,7 +141,7 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
     await SunmiPrinterLibrary.setTextStyle('bold', true);
     await SunmiPrinterLibrary.printColumnsText(
       ['Total =>', `${Number(ticket.montant_total).toFixed(2)} HTG`],
-      [16, 16],
+      [14, 13],
       ['left', 'right']
     );
     await SunmiPrinterLibrary.setTextStyle('bold', false);
@@ -152,11 +151,10 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
   }
 
   if (tickets.length > 1) {
-    await SunmiPrinterLibrary.lineWrap(1);
     await SunmiPrinterLibrary.setTextStyle('bold', true);
     await SunmiPrinterLibrary.printColumnsText(
       ['Grand Total =>', `${grandTotal.toFixed(2)} HTG`],
-      [16, 16],
+      [14, 13],
       ['left', 'right']
     );
     await SunmiPrinterLibrary.setTextStyle('bold', false);
@@ -176,7 +174,7 @@ export async function imprimerRapportSunmi(titre: string, lignes: LigneRapport[]
 
   await SunmiPrinterLibrary.setAlignment('left');
   for (const ligne of lignes) {
-    await SunmiPrinterLibrary.printColumnsText([ligne.label, ligne.valeur], [18, 14], ['left', 'right']);
+    await SunmiPrinterLibrary.printColumnsText([ligne.label, ligne.valeur], [16, 11], ['left', 'right']);
   }
   await SunmiPrinterLibrary.setAlignment('center');
   await SunmiPrinterLibrary.printText(SEPARATEUR);
@@ -204,16 +202,16 @@ export async function imprimerTransactionsSunmi(
   await imprimerEntete(entete, 'Rapport Transaction');
 
   await SunmiPrinterLibrary.setAlignment('left');
-  await SunmiPrinterLibrary.printColumnsText(['Solde', `${resume.balance.toFixed(0)} HTG`], [18, 14], ['left', 'right']);
-  await SunmiPrinterLibrary.printColumnsText(['Total Recharge', `${resume.totalRecharge.toFixed(0)} HTG`], [18, 14], ['left', 'right']);
-  await SunmiPrinterLibrary.printColumnsText(['Total Retrait', `${resume.totalRetrait.toFixed(0)} HTG`], [18, 14], ['left', 'right']);
+  await SunmiPrinterLibrary.printColumnsText(['Solde', `${resume.balance.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
+  await SunmiPrinterLibrary.printColumnsText(['Total Recharge', `${resume.totalRecharge.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
+  await SunmiPrinterLibrary.printColumnsText(['Total Retrait', `${resume.totalRetrait.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
   await SunmiPrinterLibrary.setAlignment('center');
   await SunmiPrinterLibrary.printText(SEPARATEUR);
 
   await SunmiPrinterLibrary.setAlignment('left');
   for (const t of transactions) {
-    await SunmiPrinterLibrary.printColumnsText([t.ref_code, t.type], [18, 14], ['left', 'right']);
-    await SunmiPrinterLibrary.printColumnsText([t.dateAffichee, `${t.montant.toFixed(0)} HTG`], [18, 14], ['left', 'right']);
+    await SunmiPrinterLibrary.printColumnsText([t.ref_code, t.type], [16, 11], ['left', 'right']);
+    await SunmiPrinterLibrary.printColumnsText([t.dateAffichee, `${t.montant.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
   }
   await SunmiPrinterLibrary.setAlignment('center');
   await SunmiPrinterLibrary.printText(SEPARATEUR);

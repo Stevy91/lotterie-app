@@ -1,5 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type Onglet = 'fiche' | 'rapport' | 'scanner' | 'parametre';
 
@@ -16,8 +17,10 @@ const ONGLETS: { cle: Onglet; label: string; icone: keyof typeof Ionicons.glyphM
 ];
 
 export default function BarreNavigation({ onglet, onChanger }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.barre}>
+    <View style={[styles.barre, { paddingBottom: Math.max(8, insets.bottom) }]}>
       {ONGLETS.map((o) => {
         const actif = o.cle === onglet;
         const couleur = actif ? '#6c5ce7' : '#999';

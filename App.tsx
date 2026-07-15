@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
 import Svg, { Path } from 'react-native-svg';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { alerteSimple } from './alerte';
 import { appelApi } from './api';
@@ -109,12 +110,14 @@ export default function App() {
   }
 
   return (
-    <View style={styles.racine}>
-      <StatusBar style="auto" />
-      <View style={styles.zoneContenu}>{contenu}</View>
-      {afficherNav && <BarreNavigation onglet={onglet} onChanger={changerOnglet} />}
-      <PopupGlobal />
-    </View>
+    <SafeAreaProvider>
+      <View style={styles.racine}>
+        <StatusBar style="auto" />
+        <View style={styles.zoneContenu}>{contenu}</View>
+        {afficherNav && <BarreNavigation onglet={onglet} onChanger={changerOnglet} />}
+        <PopupGlobal />
+      </View>
+    </SafeAreaProvider>
   );
 }
 
