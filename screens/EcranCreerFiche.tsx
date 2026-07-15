@@ -644,7 +644,8 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       const config = await obtenirConfiguration();
       await imprimerFichesSunmi(ts, {
         nomCompagnie: config.app_name ?? 'Lotterie',
-        adresse: ts[0].agent?.adresse ?? config.adresse,
+        adresseAgent: ts[0].agent?.adresse,
+        adresseProprietaire: ts[0].agent?.proprietaire_adresse,
         posId: String(utilisateur.id),
         vendeurNom: nomVendeur(ts[0]),
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,

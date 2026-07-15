@@ -8,7 +8,10 @@ const SEPARATEUR = '********************************\n';
 
 export interface EnteteRecu {
   nomCompagnie: string;
-  adresse?: string | null;
+  // "Addresse" : l'adresse propre du vendeur (agent/sous-agent).
+  adresseAgent?: string | null;
+  // "Central" : l'adresse du proprietaire (client) auquel appartient le vendeur.
+  adresseProprietaire?: string | null;
   posId: string;
   vendeurNom: string;
   logoUrl?: string | null;
@@ -93,10 +96,8 @@ async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> 
   await SunmiPrinterLibrary.setAlignment('center');
   await SunmiPrinterLibrary.printText(`POS: ${entete.posId}\n`);
   await SunmiPrinterLibrary.printText(`Vendeur: ${entete.vendeurNom}\n`);
-  if (entete.adresse) {
-    await SunmiPrinterLibrary.printText(`Addresse : ${entete.adresse}\n`);
-    await SunmiPrinterLibrary.printText(`Central: ${entete.nomCompagnie}\n`);
-  }
+  await SunmiPrinterLibrary.printText(`Addresse : ${entete.adresseAgent || '-'}\n`);
+  await SunmiPrinterLibrary.printText(`Central: ${entete.adresseProprietaire || '-'}\n`);
   await SunmiPrinterLibrary.printText(`Date: ${formaterDate(new Date())}\n`);
   await SunmiPrinterLibrary.printText(SEPARATEUR);
 }

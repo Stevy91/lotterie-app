@@ -13,6 +13,7 @@ export interface Utilisateur {
   balance: number | string;
   logo_url: string | null;
   adresse: string | null;
+  proprietaire_adresse: string | null;
 }
 
 export async function connecter(username: string, password: string): Promise<Utilisateur> {

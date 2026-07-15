@@ -146,7 +146,8 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
 
       await imprimerFichesSunmi([ticket], {
         nomCompagnie: config.app_name ?? 'Lotterie',
-        adresse: ticket.agent?.adresse ?? config.adresse,
+        adresseAgent: ticket.agent?.adresse,
+        adresseProprietaire: ticket.agent?.proprietaire_adresse,
         posId: String(ticket.agent?.id ?? ''),
         vendeurNom,
         logoUrl: utilisateur.logo_url ?? config.logo_url,

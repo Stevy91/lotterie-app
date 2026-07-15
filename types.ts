@@ -54,6 +54,7 @@ export interface AgentResponse {
   name: string;
   username: string;
   adresse: string | null;
+  proprietaire_adresse: string | null;
   parent: { id: number; name: string } | null;
 }
 

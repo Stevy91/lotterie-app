@@ -117,7 +117,8 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
 
       await imprimerFichesSunmi(ticketsFiltres, {
         nomCompagnie: config.app_name ?? 'Lotterie',
-        adresse: ticketsFiltres[0].agent?.adresse ?? config.adresse,
+        adresseAgent: ticketsFiltres[0].agent?.adresse,
+        adresseProprietaire: ticketsFiltres[0].agent?.proprietaire_adresse,
         posId: String(utilisateur.id),
         vendeurNom: parent ? `${parent} ${soi}` : soi,
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
