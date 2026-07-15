@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Print from 'expo-print';
 import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
-import { genererRecuHtml } from '../receipt';
 import { imprimerFichesSunmi } from '../sunmiPrint';
 import { Tirage, TicketResponse } from '../types';
 
@@ -153,10 +151,8 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
         logoUrl: utilisateur.logo_url ?? config.logo_url,
         texteFiche: config.text_fiche,
       });
-    } catch (e) {
-      // Imprimante Sunmi indisponible (Expo Go, appareil sans imprimante...) :
-      // repli sur le dialogue d'impression standard Android/iOS.
-      await Print.printAsync({ html: genererRecuHtml(ticket) });
+    } catch (e: any) {
+      alerteSimple('Impression impossible', e.message ?? "L'imprimante Sunmi n'est pas disponible sur cet appareil.");
     }
   }
 
