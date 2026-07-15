@@ -160,9 +160,11 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
       const montant = Number(mise.montant);
       const montantTexte = montant === 0 ? 'gratis' : `${montant.toFixed(2)} HTG`;
 
+      // Somme des largeurs <= 31 : a 32 pile, le dernier caractere ("G" de
+      // "HTG") deborde sur une ligne a part.
       await SunmiPrinterLibrary.printColumnsText(
         [abrev, numero, `=> ${montantTexte}`],
-        [4, 12, 16],
+        [4, 11, 15],
         ['left', 'left', 'right']
       );
     }
