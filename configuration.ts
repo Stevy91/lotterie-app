@@ -10,7 +10,10 @@ export interface ConfigurationApp {
 
 export async function obtenirConfiguration(): Promise<ConfigurationApp> {
   try {
-    const reponse = await fetchAvecTimeout(`${API_URL}/configuration`);
+    // Parametre anti-cache : un proxy reseau (mobile) ou un cache CDN en
+    // amont peut servir une reponse perimee pour cette URL sinon (vu sur le
+    // terrain : app_name/text_fiche periodiquement en retard sur le backoffice).
+    const reponse = await fetchAvecTimeout(`${API_URL}/configuration?_=${Date.now()}`);
     if (!reponse.ok) return {};
     return await reponse.json();
   } catch {
