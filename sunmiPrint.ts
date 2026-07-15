@@ -108,11 +108,15 @@ async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> 
   await SunmiPrinterLibrary.lineWrap(1);
 
   await SunmiPrinterLibrary.setAlignment('center');
-  await SunmiPrinterLibrary.printText(`POS: ${entete.posId}\n`);
-  await SunmiPrinterLibrary.printText(`Vendeur: ${entete.vendeurNom}\n`);
-  await SunmiPrinterLibrary.printText(`Addresse : ${entete.adresseAgent || '-'}\n`);
-  await SunmiPrinterLibrary.printText(`Central: ${entete.adresseProprietaire || '-'}\n`);
-  await SunmiPrinterLibrary.printText(`Date: ${formaterDate(new Date())}\n`);
+  // Un seul appel pour les 5 lignes : des appels printText() separes
+  // inserent un espace parasite entre chaque ligne sur le Sunmi.
+  await SunmiPrinterLibrary.printText(
+    `POS: ${entete.posId}\n` +
+      `Vendeur: ${entete.vendeurNom}\n` +
+      `Addresse : ${entete.adresseAgent || '-'}\n` +
+      `Central: ${entete.adresseProprietaire || '-'}\n` +
+      `Date: ${formaterDate(new Date())}\n`
+  );
   await SunmiPrinterLibrary.printText(SEPARATEUR);
 }
 
@@ -158,7 +162,7 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
 
       await SunmiPrinterLibrary.printColumnsText(
         [abrev, numero, `=> ${montantTexte}`],
-        [3, 9, 14],
+        [4, 12, 16],
         ['left', 'left', 'right']
       );
     }

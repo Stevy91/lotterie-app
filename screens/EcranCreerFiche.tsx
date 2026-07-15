@@ -654,8 +654,11 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       const config = await obtenirConfiguration();
       await imprimerFichesSunmi(ts, {
         nomCompagnie: config.app_name ?? 'Lotterie',
-        adresseAgent: ts[0].agent?.adresse,
-        adresseProprietaire: ts[0].agent?.proprietaire_adresse,
+        // Une fiche brouillon (apercu, pas encore enregistree) n'a pas de
+        // ts[0].agent : on utilise alors directement l'utilisateur connecte,
+        // qui EST le vendeur pour toute fiche creee depuis cet ecran.
+        adresseAgent: ts[0].agent?.adresse ?? utilisateur.adresse,
+        adresseProprietaire: ts[0].agent?.proprietaire_adresse ?? utilisateur.proprietaire_adresse,
         posId: String(utilisateur.id),
         vendeurNom: nomVendeur(ts[0]),
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
