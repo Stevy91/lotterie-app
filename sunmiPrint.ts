@@ -19,15 +19,21 @@ export interface LigneRapport {
   valeur: string;
 }
 
-// "MA Auto" -> "MA", "L3 Auto" -> "L3", "BPaire" -> "BP", "Reverse" -> "RE",
-// "Lo" -> "LO", "P5 Auto" -> "P5" : reflete le vrai type de jeu au lieu de
-// tout regrouper sous "BO" des qu'il n'y a pas de 2e numero.
+// "L3 Auto".."L7 Auto" -> "Lo3".."Lo7", "MA Auto" -> "MA" (Marriage), tout
+// le reste (BPaire, Reverse, P0-P9 Auto, Lo, 3 Chif...) -> "BO".
 function abregerTypeJeu(nomTypeJeu: string): string {
-  const sansAuto = nomTypeJeu.replace(/\s*Auto$/i, '').trim();
-  if (sansAuto.length <= 3) {
-    return sansAuto.toUpperCase();
+  const nom = nomTypeJeu.trim();
+
+  const correspondanceL = nom.match(/^L(\d)\s*Auto$/i);
+  if (correspondanceL) {
+    return `Lo${correspondanceL[1]}`;
   }
-  return sansAuto.replace(/\s+/g, '').slice(0, 2).toUpperCase();
+
+  if (/^MA\s*Auto$/i.test(nom)) {
+    return 'MA';
+  }
+
+  return 'BO';
 }
 
 function formaterDate(date: Date): string {
