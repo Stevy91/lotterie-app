@@ -34,8 +34,8 @@ export interface Ligne {
   typeJeu: TypeJeu;
   numero: string;
   numero2?: string;
-  // Lotto 5 chiffres uniquement : 1, 2 ou 3 (quelle combinaison de lots verifier).
-  optionLotto5?: number;
+  // Lotto 4/5 chiffres uniquement : 1, 2 ou 3 (quelle combinaison de lots verifier).
+  optionCombinaison?: number;
   montant: number;
 }
 
@@ -43,7 +43,7 @@ export interface MiseResponse {
   id: number;
   numero: string;
   numero_2: string | null;
-  option_lotto5: number | null;
+  option_combinaison: number | null;
   montant: string;
   gain_potentiel: string;
   gain_reel: string;
