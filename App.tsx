@@ -7,7 +7,7 @@ import Svg, { Path } from 'react-native-svg';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { alerteSimple } from './alerte';
-import { appelApi } from './api';
+import { appelApi, definirGestionnaireSuspension } from './api';
 import { connecter, deconnecter, mettreAJourUtilisateurStocke, recupererSession, Utilisateur } from './auth';
 import { API_URL } from './config';
 import { fetchAvecTimeout } from './fetchAvecTimeout';
@@ -30,6 +30,19 @@ export default function App() {
     recupererSession()
       .then((session) => setUtilisateur(session?.user ?? null))
       .finally(() => setVerificationSession(false));
+  }, []);
+
+  // Suspension immediate : si le serveur repond « compte suspendu » (403) sur
+  // n'importe quel appel, on vide la session et on renvoie a l'ecran de connexion.
+  useEffect(() => {
+    definirGestionnaireSuspension(() => {
+      deconnecter().catch(() => {});
+      setUtilisateur(null);
+      setOnglet('fiche');
+      setEcran('accueil');
+      alerteSimple('Compte suspendu', "Ce compte a ete suspendu. Contacte ton administrateur pour plus d'informations.");
+    });
+    return () => definirGestionnaireSuspension(null);
   }, []);
 
   // Le solde affiche (utilisateur.balance) est capture au login et ne bouge plus
