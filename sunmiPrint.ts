@@ -27,7 +27,7 @@ export interface LigneRapport {
 
 // "L3 Auto".."L7 Auto" -> "Lo3".."Lo7", "MA Auto" -> "MA" (Marriage), tout
 // le reste (BPaire, Reverse, P0-P9 Auto, Lo, 3 Chif...) -> "BO".
-function abregerTypeJeu(nomTypeJeu: string): string {
+export function abregerTypeJeu(nomTypeJeu: string): string {
   const nom = nomTypeJeu.trim();
 
   const correspondanceL = nom.match(/^L(\d)\s*Auto$/i);

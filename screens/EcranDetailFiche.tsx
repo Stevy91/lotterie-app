@@ -5,17 +5,13 @@ import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
-import { imprimerFichesSunmi } from '../sunmiPrint';
+import { abregerTypeJeu, imprimerFichesSunmi } from '../sunmiPrint';
 import { Tirage, TicketResponse } from '../types';
 
 interface Props {
   ticketId: number;
   utilisateur: Utilisateur;
   onRetour: () => void;
-}
-
-function labelDe(numero2: string | null): string {
-  return numero2 ? 'MA' : 'BO';
 }
 
 export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Props) {
@@ -247,8 +243,13 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
           const misesGagnee = mise.statut === 'gagnant';
           return (
             <View key={mise.id} style={styles.ligneTableau}>
-              <Text style={[styles.cellule, { flex: 0.9 }]}>{labelDe(mise.numero_2)}</Text>
+              <Text style={[styles.cellule, { flex: 0.9 }]}>{abregerTypeJeu(mise.type_jeu.nom)}</Text>
               <View style={{ flex: 1 }}>
+                {mise.option_combinaison && (
+                  <View style={styles.badgeOption}>
+                    <Text style={styles.badgeOptionTexte}>{mise.option_combinaison}</Text>
+                  </View>
+                )}
                 <View style={styles.badgeBoule}>
                   <Text style={styles.badgeBouleTexte}>
                     {mise.numero_2 ? `${mise.numero}x${mise.numero_2}` : mise.numero}
@@ -354,6 +355,20 @@ const styles = StyleSheet.create({
   cellule: {
     color: '#555',
     fontSize: 12,
+  },
+  badgeOption: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#6c5ce7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 3,
+  },
+  badgeOptionTexte: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   badgeBoule: {
     backgroundColor: '#2563eb',
