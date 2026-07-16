@@ -36,6 +36,27 @@ function nettoyerNumero(texte: string): string {
   return texte.replace(/[^0-9]/g, '');
 }
 
+// Comme nettoyerNumero, mais autorise en plus un suffixe ".1"/".2"/".3" :
+// l'option de combinaison du Lotto 5 chiffres (ex: "12345.2").
+function nettoyerNumeroPrincipal(texte: string): string {
+  const brut = texte.replace(/[^0-9.]/g, '');
+  const indexPoint = brut.indexOf('.');
+  if (indexPoint === -1) {
+    return brut.slice(0, 7);
+  }
+  const chiffres = brut.slice(0, indexPoint).slice(0, 5);
+  const option = brut.slice(indexPoint + 1).replace(/[^123]/g, '').slice(0, 1);
+  return `${chiffres}.${option}`;
+}
+
+// Separe le numero du suffixe ".1"/".2"/".3" (option Lotto 5). Sans suffixe,
+// l'option est indeterminee : seul un jeu a 5 chiffres l'utilise, avec 1 par defaut.
+function extraireOptionLotto5(saisie: string): { numero: string; option?: number } {
+  const [numero, optionTexte] = saisie.split('.');
+  const option = optionTexte ? parseInt(optionTexte, 10) : NaN;
+  return { numero, option: option >= 1 && option <= 3 ? option : undefined };
+}
+
 // Empeche toute lettre : ne garde que les chiffres et un seul separateur decimal.
 function nettoyerMontant(texte: string): string {
   const nettoye = texte.replace(/[^0-9.,]/g, '');
@@ -177,6 +198,10 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       return;
     }
 
+    // Lotto 5 chiffres : un suffixe ".1"/".2"/".3" choisit la combinaison de
+    // lots a verifier (voir extraireOptionLotto5). Sans suffixe -> option 1.
+    const { numero: numeroSaisi, option: optionLotto5 } = extraireOptionLotto5(numero);
+
     // Case Boule cochee : raccourci reverse/marriage directement depuis le champ Boule,
     // sans passer par les boutons Reverse/MA Auto.
     if (bouleCheckee) {
@@ -185,18 +210,18 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         alerteSimple('Aucun type de jeu', 'Aucun type de jeu n\'est configure dans le systeme.');
         return;
       }
-      if (numero.length === 2) {
-        const inverse = numero.split('').reverse().join('');
-        const paires = (inverse !== numero ? [numero, inverse] : [numero]).map((num) => ({
+      if (numeroSaisi.length === 2) {
+        const inverse = numeroSaisi.split('').reverse().join('');
+        const paires = (inverse !== numeroSaisi ? [numeroSaisi, inverse] : [numeroSaisi]).map((num) => ({
           numero: num,
           numero2: undefined as string | undefined,
         }));
         ajouterOuFusionnerLignes(typeJeuBase, paires, montantNombre);
         return;
       }
-      if (numero.length === 4) {
-        const a = numero.slice(0, 2);
-        const b = numero.slice(2, 4);
+      if (numeroSaisi.length === 4) {
+        const a = numeroSaisi.slice(0, 2);
+        const b = numeroSaisi.slice(2, 4);
         const typeMarriage = typesJeux.find((t) => t.est_combinaison) ?? typeJeuBase;
         ajouterOuFusionnerLignes(typeMarriage, [
           { numero: a, numero2: b },
@@ -212,7 +237,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     // (nombre de chiffres exact, 2e numero pour une combinaison saisie a la main).
     if (typeJeuSelectionne) {
       const typeJeu = typeJeuSelectionne;
-      if (numero.length !== typeJeu.nombre_chiffres) {
+      if (numeroSaisi.length !== typeJeu.nombre_chiffres) {
         alerteSimple('Numero invalide', `Ce jeu demande ${typeJeu.nombre_chiffres} chiffres.`);
         return;
       }
@@ -222,25 +247,25 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         return;
       }
       const numero2Valeur = combinaisonManuelleJeu ? numero2 : undefined;
-      ajouterOuFusionnerLignes(typeJeu, [{ numero, numero2: numero2Valeur }], montantNombre);
+      ajouterOuFusionnerLignes(typeJeu, [{ numero: numeroSaisi, numero2: numero2Valeur }], montantNombre, optionLotto5);
       return;
     }
 
     // Aucun type de jeu selectionne : on detecte automatiquement le jeu loto qui
     // correspond au nombre de chiffres saisis (2=simple, 3 a 7=Lo3...Lo7).
-    if (numero.length < 2 || numero.length > 7) {
+    if (numeroSaisi.length < 2 || numeroSaisi.length > 7) {
       alerteSimple('Numero invalide', 'Entre entre 2 et 7 chiffres.');
       return;
     }
     // L3-L7 Auto ont aussi un generation_auto (bouton "boules identiques"), donc on ne
     // filtre plus dessus ici : sinon la detection par nombre de chiffres les ignore et
     // retombe a tort sur BPaire pour un numero de 3+ chiffres.
-    const typeJeu = typesJeux.find((t) => t.nombre_chiffres === numero.length && !t.est_combinaison) ?? typesJeux[0];
+    const typeJeu = typesJeux.find((t) => t.nombre_chiffres === numeroSaisi.length && !t.est_combinaison) ?? typesJeux[0];
     if (!typeJeu) {
       alerteSimple('Aucun type de jeu', 'Aucun type de jeu n\'est configure dans le systeme.');
       return;
     }
-    ajouterOuFusionnerLignes(typeJeu, [{ numero, numero2: undefined }], montantNombre);
+    ajouterOuFusionnerLignes(typeJeu, [{ numero: numeroSaisi, numero2: undefined }], montantNombre, optionLotto5);
   }
 
   // Si la boule est deja jouee dans une des zones selectionnees, on demande
@@ -249,11 +274,16 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
   function ajouterOuFusionnerLignes(
     typeJeu: TypeJeu,
     paires: { numero: string; numero2: string | undefined }[],
-    montantNombre: number
+    montantNombre: number,
+    optionLotto5?: number
   ) {
+    // Lotto 5 chiffres : "12345.1"/"12345.2"/"12345.3" sont 3 mises distinctes
+    // (options de combinaison differentes) meme si le numero est identique.
+    const optionAppliquee = typeJeu.nombre_chiffres === 5 ? (optionLotto5 ?? 1) : undefined;
+
     const doublons = tirageSelectionnes.flatMap((tirage) =>
       paires
-        .filter((p) => lignes.some((l) => l.tirage.id === tirage.id && l.numero === p.numero && l.numero2 === p.numero2))
+        .filter((p) => lignes.some((l) => l.tirage.id === tirage.id && l.numero === p.numero && l.numero2 === p.numero2 && (l.optionLotto5 ?? null) === (optionAppliquee ?? null)))
         .map((p) => ({ tirage, ...p }))
     );
 
@@ -267,17 +297,18 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
             const montantEffectif = p.numero2 !== undefined && mariageGratuit ? 0 : montantNombre;
 
             const index = resultat.findIndex(
-              (l) => l.tirage.id === tirage.id && l.numero === p.numero && l.numero2 === p.numero2
+              (l) => l.tirage.id === tirage.id && l.numero === p.numero && l.numero2 === p.numero2 && (l.optionLotto5 ?? null) === (optionAppliquee ?? null)
             );
             if (index >= 0) {
               resultat[index] = { ...resultat[index], montant: resultat[index].montant + montantEffectif };
             } else {
               resultat.push({
-                localId: `${Date.now()}-${tirage.id}-${p.numero}-${p.numero2 ?? ''}-${Math.random()}`,
+                localId: `${Date.now()}-${tirage.id}-${p.numero}-${p.numero2 ?? ''}-${optionAppliquee ?? ''}-${Math.random()}`,
                 tirage,
                 typeJeu,
                 numero: p.numero,
                 numero2: p.numero2,
+                optionLotto5: optionAppliquee,
                 montant: montantEffectif,
               });
             }
@@ -460,7 +491,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
 
   function ouvrirEditionLigne(l: Ligne) {
     setLigneEnEdition(l);
-    setNumeroEditionLigne(l.numero);
+    setNumeroEditionLigne(l.optionLotto5 ? `${l.numero}.${l.optionLotto5}` : l.numero);
     setNumero2EditionLigne(l.numero2 ?? '');
     setMontantEditionLigne(String(l.montant));
   }
@@ -469,8 +500,9 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     if (!ligneEnEdition) return;
     const typeJeu = ligneEnEdition.typeJeu;
     const aDeuxNumeros = ligneEnEdition.numero2 !== undefined;
+    const { numero: numeroEdite, option: optionEditee } = extraireOptionLotto5(numeroEditionLigne);
 
-    if (numeroEditionLigne.length !== typeJeu.nombre_chiffres) {
+    if (numeroEdite.length !== typeJeu.nombre_chiffres) {
       alerteSimple('Numero invalide', `Ce jeu demande ${typeJeu.nombre_chiffres} chiffres.`);
       return;
     }
@@ -488,7 +520,13 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     setLignes((prev) =>
       prev.map((l) =>
         l.localId === localId
-          ? { ...l, numero: numeroEditionLigne, numero2: aDeuxNumeros ? numero2EditionLigne : undefined, montant: montantNombre }
+          ? {
+              ...l,
+              numero: numeroEdite,
+              numero2: aDeuxNumeros ? numero2EditionLigne : undefined,
+              optionLotto5: typeJeu.nombre_chiffres === 5 ? (optionEditee ?? l.optionLotto5 ?? 1) : undefined,
+              montant: montantNombre,
+            }
           : l
       )
     );
@@ -587,6 +625,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
               type_jeu_id: l.typeJeu.id,
               numero: l.numero,
               numero_2: l.numero2 ?? null,
+              option_lotto5: l.optionLotto5 ?? null,
               montant: l.montant,
             })),
           }),
@@ -705,6 +744,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         id: index,
         numero: l.numero,
         numero_2: l.numero2 ?? null,
+        option_lotto5: l.optionLotto5 ?? null,
         montant: String(l.montant),
         gain_potentiel: '0',
         gain_reel: '0',
@@ -756,6 +796,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
               <View key={mise.id} style={styles.ligneRecu}>
                 <Text>
                   {mise.tirage.loterie.nom} - {mise.type_jeu.nom} - {mise.numero_2 ? `${mise.numero} x ${mise.numero_2}` : mise.numero}
+                  {mise.option_lotto5 ? ` (option ${mise.option_lotto5})` : ''}
                 </Text>
                 <Text>{Number(mise.montant).toFixed(2)}</Text>
               </View>
@@ -876,7 +917,14 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
                             <Ionicons name="trash" size={15} color="#e74c3c" />
                           </TouchableOpacity>
                           <Text style={styles.ligneJoueeLabel}>{groupe.label}</Text>
-                          <Text style={styles.ligneJoueeNumero}>{l.numero2 ? `${l.numero} x ${l.numero2}` : l.numero}</Text>
+                          <View style={styles.ligneJoueeNumeroConteneur}>
+                            {l.optionLotto5 && (
+                              <View style={styles.badgeOption}>
+                                <Text style={styles.badgeOptionTexte}>{l.optionLotto5}</Text>
+                              </View>
+                            )}
+                            <Text style={styles.ligneJoueeNumero}>{l.numero2 ? `${l.numero} x ${l.numero2}` : l.numero}</Text>
+                          </View>
                           <Text style={styles.ligneJoueeMontant}>{l.montant.toFixed(2)} {DEVISE}</Text>
                           <TouchableOpacity onPress={() => ouvrirEditionLigne(l)}>
                             <Ionicons name="create" size={20} color="#e74c3c" />
@@ -936,11 +984,11 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         <View style={styles.champSaisie}>
           <TextInput
             style={styles.champInput}
-            keyboardType="number-pad"
+            keyboardType="decimal-pad"
             maxLength={7}
             value={numero}
-            onChangeText={(texte) => setNumero(nettoyerNumero(texte))}
-            placeholder={combinaisonManuelle ? 'Boule 1' : 'Boule'}
+            onChangeText={(texte) => setNumero(nettoyerNumeroPrincipal(texte))}
+            placeholder={combinaisonManuelle ? 'Boule 1' : 'Boule (Lotto 5: 12345.1/.2/.3)'}
             placeholderTextColor="#999"
           />
           <TouchableOpacity
@@ -1020,10 +1068,14 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
               <View style={styles.modalChamp}>
                 <TextInput
                   style={styles.champInput}
-                  keyboardType="number-pad"
-                  maxLength={ligneEnEdition?.typeJeu.nombre_chiffres}
+                  keyboardType={ligneEnEdition?.typeJeu.nombre_chiffres === 5 ? 'decimal-pad' : 'number-pad'}
+                  maxLength={ligneEnEdition?.typeJeu.nombre_chiffres === 5 ? 7 : ligneEnEdition?.typeJeu.nombre_chiffres}
                   value={numeroEditionLigne}
-                  onChangeText={(texte) => setNumeroEditionLigne(nettoyerNumero(texte))}
+                  onChangeText={(texte) =>
+                    setNumeroEditionLigne(
+                      ligneEnEdition?.typeJeu.nombre_chiffres === 5 ? nettoyerNumeroPrincipal(texte) : nettoyerNumero(texte)
+                    )
+                  }
                   placeholder={ligneEnEdition?.numero2 !== undefined ? 'Boule 1' : 'Boule'}
                   placeholderTextColor="#999"
                 />
@@ -1238,8 +1290,26 @@ const styles = StyleSheet.create({
     color: '#888',
     fontWeight: '600',
   },
-  ligneJoueeNumero: {
+  ligneJoueeNumeroConteneur: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ligneJoueeNumero: {
+    fontWeight: '700',
+  },
+  badgeOption: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#6c5ce7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeOptionTexte: {
+    color: '#fff',
+    fontSize: 10,
     fontWeight: '700',
   },
   ligneJoueeMontant: {

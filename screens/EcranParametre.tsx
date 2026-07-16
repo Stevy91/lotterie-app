@@ -109,12 +109,12 @@ export default function EcranParametre({ utilisateur, onDeconnecter }: Props) {
           <Text style={styles.boutonTexte}>Tirage Disponible</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[styles.bouton, styles.boutonMoitie, { backgroundColor: '#2563eb' }]}
           onPress={() => bientotDisponible('Imprimante & avance')}
         >
           <Text style={styles.boutonTexte}>Imprimante & avance</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <TouchableOpacity
           style={[styles.bouton, styles.boutonMoitie, { backgroundColor: '#e67e22' }]}
           onPress={() => setSousEcran('numeros-gagnants')}

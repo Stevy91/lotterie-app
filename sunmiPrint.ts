@@ -156,7 +156,10 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
     await SunmiPrinterLibrary.setAlignment('left');
     for (const mise of ticket.mises) {
       const abrev = abregerTypeJeu(mise.type_jeu.nom);
-      const numero = mise.numero_2 ? `${mise.numero}*${mise.numero_2}` : mise.numero;
+      // Lotto 5 chiffres : suffixe "-1"/"-2"/"-3" pour identifier l'option de
+      // combinaison jouee (voir CalculGainService::evaluerLo5 cote backend).
+      const suffixeOption = mise.option_lotto5 ? `-${mise.option_lotto5}` : '';
+      const numero = mise.numero_2 ? `${mise.numero}*${mise.numero_2}` : `${mise.numero}${suffixeOption}`;
       const montant = Number(mise.montant);
       const montantTexte = montant === 0 ? 'gratis' : `${montant.toFixed(2)} HTG`;
 
