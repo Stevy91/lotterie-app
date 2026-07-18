@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SelecteurDate from '../composants/SelecteurDate';
 import { alerteSimple } from '../alerte';
@@ -12,6 +12,22 @@ interface Props {
 
 const COULEURS_BOULES = ['#2563eb', '#e67e22', '#2563eb'];
 const COULEURS_BADGE = ['#7c3aed', '#16a34a', '#e67e22', '#2563eb', '#dc2626', '#0d9488'];
+
+// Logo affiche pour chaque loterie (require statique obligatoire en RN).
+// La cle est cherchee dans le nom de base de la loterie (insensible a la casse).
+const LOGOS_LOTERIE: { motcle: string; source: ReturnType<typeof require> }[] = [
+  { motcle: 'florida', source: require('../assets/FL.png') },
+  { motcle: 'georgia', source: require('../assets/GG.png') },
+  { motcle: 'new york', source: require('../assets/NY.png') },
+  { motcle: 'newyork', source: require('../assets/NY.png') },
+  { motcle: 'tennessee', source: require('../assets/TNS.png') },
+  { motcle: 'texas', source: require('../assets/TX.png') },
+];
+
+function logoLoterie(base: string): ReturnType<typeof require> | null {
+  const b = base.toLowerCase();
+  return LOGOS_LOTERIE.find((l) => b.includes(l.motcle))?.source ?? null;
+}
 
 function versDateApi(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -96,11 +112,17 @@ export default function EcranNumeroGagnant({ onRetour }: Props) {
           {basesFiltrees.length === 0 ? (
             <Text style={styles.vide}>Aucun resultat pour cette date.</Text>
           ) : (
-            basesFiltrees.map((base, index) => (
+            basesFiltrees.map((base, index) => {
+              const logo = logoLoterie(base);
+              return (
               <View key={base} style={styles.carte}>
-                <View style={[styles.badgeLoterie, { backgroundColor: COULEURS_BADGE[index % COULEURS_BADGE.length] }]}>
-                  <Text style={styles.badgeLoterieTexte}>{base}</Text>
-                </View>
+                {logo ? (
+                  <Image source={logo} style={styles.logoLoterie} resizeMode="contain" />
+                ) : (
+                  <View style={[styles.badgeLoterie, { backgroundColor: COULEURS_BADGE[index % COULEURS_BADGE.length] }]}>
+                    <Text style={styles.badgeLoterieTexte}>{base}</Text>
+                  </View>
+                )}
 
                 <View style={styles.zoneResultats}>
                   {groupes[base].map((tirage) => {
@@ -126,7 +148,8 @@ export default function EcranNumeroGagnant({ onRetour }: Props) {
                   })}
                 </View>
               </View>
-            ))
+            );
+            })
           )}
         </ScrollView>
       )}
@@ -213,6 +236,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
     gap: 12,
+  },
+  logoLoterie: {
+    width: 80,
+    height: 80,
   },
   badgeLoterie: {
     width: 80,

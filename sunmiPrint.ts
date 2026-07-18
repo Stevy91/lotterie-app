@@ -216,6 +216,19 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
     await SunmiPrinterLibrary.printText(SEPARATEUR);
   }
 
+  // QR code de chaque fiche, en bas, au-dessus du texte configure : scanner
+  // ce QR dans l'app ouvre directement le detail de la fiche (voir EcranScanner).
+  for (const ticket of tickets) {
+    await SunmiPrinterLibrary.setAlignment('center');
+    await SunmiPrinterLibrary.printText(`${ticket.numero_ticket}\n`);
+    try {
+      await SunmiPrinterLibrary.printQRCode(`FICHE:${ticket.id}`, 6, 'middle');
+      await SunmiPrinterLibrary.lineWrap(1);
+    } catch {
+      // Certains modeles peuvent ne pas supporter printQRCode : on ignore.
+    }
+  }
+
   await imprimerPied(entete.texteFiche);
 }
 

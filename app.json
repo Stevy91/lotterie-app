@@ -30,7 +30,13 @@
     },
     "plugins": [
       "expo-secure-store",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "L'application utilise la camera pour scanner le QR code des fiches."
+        }
+      ]
     ],
     "extra": {
       "eas": {

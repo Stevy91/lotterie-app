@@ -13,6 +13,7 @@
     "@mitsuharu/react-native-sunmi-printer-library": "^2.4.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "expo": "~54.0.34",
+    "expo-camera": "~17.0.10",
     "expo-dev-client": "~6.0.21",
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.11",

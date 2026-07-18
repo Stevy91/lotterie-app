@@ -102,7 +102,7 @@ export default function App() {
     contenu = <EcranRapport utilisateur={utilisateur} onRetour={() => changerOnglet('fiche')} />;
     afficherNav = true;
   } else if (onglet === 'scanner') {
-    contenu = <EcranScanner />;
+    contenu = <EcranScanner utilisateur={utilisateur} />;
     afficherNav = true;
   } else if (onglet === 'parametre') {
     contenu = <EcranParametre utilisateur={utilisateur} onDeconnecter={seDeconnecter} />;
