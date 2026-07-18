@@ -75,10 +75,6 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
   const [tirages, setTirages] = useState<Tirage[]>([]);
   const [typesJeux, setTypesJeux] = useState<TypeJeu[]>([]);
   const [chargement, setChargement] = useState(true);
-  // Si le proprietaire a active "Mariage gratuit" dans Configuration, toute
-  // ligne Marriage (avec un 2e numero) est enregistree a 0 au lieu du montant saisi.
-  const [mariageGratuit, setMariageGratuit] = useState(false);
-
   const [tirageSelectionnes, setTirageSelectionnes] = useState<Tirage[]>([]);
   const [typeJeuSelectionne, setTypeJeuSelectionne] = useState<TypeJeu | null>(null);
   const [numero, setNumero] = useState('');
@@ -155,9 +151,6 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       setTirages(dataTirages);
       setTypesJeux(dataTypesJeux);
       setTirageSelectionnes(dataTirages[0] ? [dataTirages[0]] : []);
-
-      const config = await obtenirConfiguration();
-      setMariageGratuit(config.mariage_gratuit === 'Oui');
     } catch (e) {
       alerteSimple(
         'Connexion impossible',
@@ -298,9 +291,10 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         const resultat = [...prev];
         for (const tirage of tirageSelectionnes) {
           for (const p of paires) {
-            // Marriage gratuit (Configuration du proprietaire) : une ligne
-            // avec 2e numero s'enregistre a 0, peu importe le montant saisi.
-            const montantEffectif = p.numero2 !== undefined && mariageGratuit ? 0 : montantNombre;
+            // Les mariages joues restent payants : « Mariage gratuit » ne rend
+            // plus gratuits les mariages saisis, il declenche cote serveur la
+            // generation de mariages gratuits bonus aleatoires (en plus).
+            const montantEffectif = montantNombre;
 
             const index = resultat.findIndex(
               (l) => l.tirage.id === tirage.id && l.numero === p.numero && l.numero2 === p.numero2 && (l.optionCombinaison ?? null) === (optionAppliquee ?? null)
