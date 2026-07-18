@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 
+import { appelApi } from '../api';
 import { Utilisateur } from '../auth';
+import { TicketResponse } from '../types';
 import EcranDetailFiche from './EcranDetailFiche';
 
 interface Props {
@@ -15,6 +17,33 @@ export default function EcranScanner({ utilisateur }: Props) {
   const [ticketId, setTicketId] = useState<number | null>(null);
   const [scanEnCours, setScanEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+
+  // Saisie manuelle du numero de fiche (secours quand le QR imprime est trop pale).
+  const [saisieVisible, setSaisieVisible] = useState(false);
+  const [numeroSaisi, setNumeroSaisi] = useState('');
+  const [rechercheEnCours, setRechercheEnCours] = useState(false);
+
+  async function ouvrirParNumero() {
+    const numero = numeroSaisi.trim();
+    if (!numero) return;
+    try {
+      setRechercheEnCours(true);
+      const reponse = await appelApi(`/tickets/numero/${encodeURIComponent(numero)}`);
+      if (!reponse.ok) {
+        setErreur('Aucune fiche ne correspond a ce numero.');
+        return;
+      }
+      const ticket: TicketResponse = await reponse.json();
+      setSaisieVisible(false);
+      setNumeroSaisi('');
+      setErreur(null);
+      setTicketId(ticket.id);
+    } catch {
+      setErreur('Impossible de rechercher la fiche. Verifie ta connexion.');
+    } finally {
+      setRechercheEnCours(false);
+    }
+  }
 
   // Une fiche a ete scannee : on ouvre directement son detail.
   if (ticketId !== null) {
@@ -81,6 +110,47 @@ export default function EcranScanner({ utilisateur }: Props) {
         <View style={styles.cadre} />
         <Text style={styles.consigne}>Vise le QR code au bas de la fiche</Text>
       </View>
+
+      {/* Secours : saisir le numero de fiche a la main */}
+      <TouchableOpacity style={styles.boutonManuel} onPress={() => setSaisieVisible(true)}>
+        <Ionicons name="keypad-outline" size={18} color="#fff" />
+        <Text style={styles.boutonManuelTexte}>Saisir le numero</Text>
+      </TouchableOpacity>
+
+      {saisieVisible && (
+        <View style={styles.fondSaisie}>
+          <View style={styles.carteSaisie}>
+            <Text style={styles.titreSaisie}>Numero de la fiche</Text>
+            <TextInput
+              style={styles.champSaisie}
+              placeholder="Ex: TCK-XXXXXXXX"
+              placeholderTextColor="#999"
+              autoCapitalize="characters"
+              autoFocus
+              value={numeroSaisi}
+              onChangeText={setNumeroSaisi}
+            />
+            <View style={styles.boutonsSaisie}>
+              <TouchableOpacity
+                style={[styles.boutonSaisie, styles.boutonSaisieSecondaire]}
+                onPress={() => {
+                  setSaisieVisible(false);
+                  setNumeroSaisi('');
+                }}
+              >
+                <Text style={styles.boutonSaisieTexte}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.boutonSaisie} onPress={ouvrirParNumero} disabled={rechercheEnCours}>
+                {rechercheEnCours ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.boutonSaisieTexte}>Ouvrir</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
 
       {erreur && (
         <View style={styles.barreErreur}>
@@ -171,5 +241,71 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     marginLeft: 12,
+  },
+  boutonManuel: {
+    position: 'absolute',
+    top: 50,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(108,92,231,0.9)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  boutonManuelTexte: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  fondSaisie: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  carteSaisie: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+  },
+  titreSaisie: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 12,
+  },
+  champSaisie: {
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    fontSize: 15,
+  },
+  boutonsSaisie: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  boutonSaisie: {
+    flex: 1,
+    backgroundColor: '#6c5ce7',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  boutonSaisieSecondaire: {
+    backgroundColor: '#6b7280',
+  },
+  boutonSaisieTexte: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });
