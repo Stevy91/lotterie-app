@@ -222,7 +222,8 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
     await SunmiPrinterLibrary.setAlignment('center');
     await SunmiPrinterLibrary.printText(`${ticket.numero_ticket}\n`);
     try {
-      await SunmiPrinterLibrary.printQRCode(`FICHE:${ticket.id}`, 6, 'middle');
+      // Module 10 : QR plus grand et plus facile a scanner sur papier thermique.
+      await SunmiPrinterLibrary.printQRCode(`FICHE:${ticket.id}`, 10, 'middle');
       await SunmiPrinterLibrary.lineWrap(1);
     } catch {
       // Certains modeles peuvent ne pas supporter printQRCode : on ignore.

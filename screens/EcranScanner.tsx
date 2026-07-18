@@ -70,6 +70,7 @@ export default function EcranScanner({ utilisateur }: Props) {
       <CameraView
         style={StyleSheet.absoluteFill}
         facing="back"
+        autofocus="on"
         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         onBarcodeScanned={scanEnCours ? undefined : surScan}
       />

@@ -24,10 +24,6 @@ const LOGOS_LOTERIE: { motcle: string; source: ReturnType<typeof require> }[] = 
   { motcle: 'texas', source: require('../assets/TX.png') },
 ];
 
-function logoLoterie(base: string): ReturnType<typeof require> | null {
-  const b = base.toLowerCase();
-  return LOGOS_LOTERIE.find((l) => b.includes(l.motcle))?.source ?? null;
-}
 
 function versDateApi(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -67,16 +63,25 @@ export default function EcranNumeroGagnant({ onRetour }: Props) {
     }
   }
 
-  const groupes = tirages.reduce<Record<string, Tirage[]>>((acc, tirage) => {
-    const { base } = separerNomEtMoment(tirage.loterie.nom);
-    if (!acc[base]) acc[base] = [];
-    acc[base].push(tirage);
-    return acc;
-  }, {});
+  // Regroupement par MARQUE (mot-cle du logo, insensible a la casse) : ainsi
+  // "Texas Matin" et "TEXAS Soir" tombent dans la meme carte, meme si la casse
+  // ou le libelle exact different. Sinon on regroupe par nom de base normalise.
+  const groupes = (() => {
+    const map = new Map<string, { cle: string; logo: ReturnType<typeof require> | null; base: string; tirages: Tirage[] }>();
+    for (const tirage of tirages) {
+      const { base } = separerNomEtMoment(tirage.loterie.nom);
+      const marque = LOGOS_LOTERIE.find((l) => base.toLowerCase().includes(l.motcle));
+      const cle = marque?.motcle ?? base.toLowerCase();
+      if (!map.has(cle)) {
+        map.set(cle, { cle, logo: marque?.source ?? null, base, tirages: [] });
+      }
+      map.get(cle)!.tirages.push(tirage);
+    }
+    return Array.from(map.values());
+  })();
 
-  const basesFiltrees = Object.keys(groupes).filter((base) =>
-    base.toLowerCase().includes(recherche.toLowerCase())
-  );
+  const recherM = recherche.toLowerCase();
+  const groupesFiltres = groupes.filter((g) => g.base.toLowerCase().includes(recherM) || g.cle.includes(recherM));
 
   return (
     <View style={styles.conteneur}>
@@ -109,23 +114,22 @@ export default function EcranNumeroGagnant({ onRetour }: Props) {
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-          {basesFiltrees.length === 0 ? (
+          {groupesFiltres.length === 0 ? (
             <Text style={styles.vide}>Aucun resultat pour cette date.</Text>
           ) : (
-            basesFiltrees.map((base, index) => {
-              const logo = logoLoterie(base);
+            groupesFiltres.map((groupe, index) => {
               return (
-              <View key={base} style={styles.carte}>
-                {logo ? (
-                  <Image source={logo} style={styles.logoLoterie} resizeMode="contain" />
+              <View key={groupe.cle} style={styles.carte}>
+                {groupe.logo ? (
+                  <Image source={groupe.logo} style={styles.logoLoterie} resizeMode="contain" />
                 ) : (
                   <View style={[styles.badgeLoterie, { backgroundColor: COULEURS_BADGE[index % COULEURS_BADGE.length] }]}>
-                    <Text style={styles.badgeLoterieTexte}>{base}</Text>
+                    <Text style={styles.badgeLoterieTexte}>{groupe.base}</Text>
                   </View>
                 )}
 
                 <View style={styles.zoneResultats}>
-                  {groupes[base].map((tirage) => {
+                  {groupe.tirages.map((tirage) => {
                     const { moment } = separerNomEtMoment(tirage.loterie.nom);
                     const numeros = [tirage.numero_1, tirage.numero_2, tirage.numero_3].filter(
                       (n): n is string => !!n
