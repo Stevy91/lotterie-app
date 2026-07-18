@@ -149,9 +149,9 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
           <Ionicons name="arrow-back" size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.titre}>{filtre === 'gagnantes' ? 'Fiches Gagnants' : 'Fiches'}</Text>
-        <TouchableOpacity onPress={imprimerListe} style={{ width: 22 }}>
+        {/* <TouchableOpacity onPress={imprimerListe} style={{ width: 22 }}>
           <Ionicons name="print-outline" size={22} color="#333" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <View style={styles.filtres}>

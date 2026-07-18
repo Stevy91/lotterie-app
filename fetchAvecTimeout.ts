@@ -24,3 +24,17 @@ export async function fetchAvecTimeout(
     clearTimeout(idDelai);
   }
 }
+
+// Transforme une erreur technique (timeout, "Network request failed", serveur
+// injoignable...) en message clair pour un vendeur, sans jargon technique
+// (pas de "Laravel", "config.ts", "IP de l'ordinateur"). La cause quasi
+// systematique sur le terrain est un internet coupe ou trop lent.
+export function messageErreurReseau(e: any): string {
+  const msg = typeof e?.message === 'string' ? e.message : '';
+
+  if (msg.includes('trop de temps')) {
+    return 'La connexion est trop lente. Rapproche-toi du reseau ou reessaie dans un instant.';
+  }
+
+  return "Pas de connexion. Verifie que ton WiFi ou tes donnees mobiles (4G) sont actifs, puis reessaie.";
+}

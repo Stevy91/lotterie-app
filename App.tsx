@@ -166,7 +166,7 @@ function EcranConnexion({ onConnecte }: { onConnecte: (u: Utilisateur) => void }
       const utilisateur = await connecter(username.trim(), password);
       onConnecte(utilisateur);
     } catch (e: any) {
-      alerteSimple('Connexion impossible', e.message ?? "Verifie tes identifiants et l'adresse du serveur dans config.ts.");
+      alerteSimple('Connexion impossible', e?.message ?? "Verifie ta connexion internet et tes identifiants, puis reessaie.");
     } finally {
       setEnCours(false);
     }

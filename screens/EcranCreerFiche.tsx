@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
+import { messageErreurReseau } from '../fetchAvecTimeout';
 import { Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
 import { Ligne, Tirage, TypeJeu, TicketResponse } from '../types';
@@ -152,10 +153,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       setTypesJeux(dataTypesJeux);
       setTirageSelectionnes(dataTirages[0] ? [dataTirages[0]] : []);
     } catch (e) {
-      alerteSimple(
-        'Connexion impossible',
-        "Verifie que le serveur Laravel tourne et que l'adresse API_URL dans config.ts correspond a l'IP de ton ordinateur."
-      );
+      alerteSimple('Pas de connexion internet', messageErreurReseau(e));
     } finally {
       setChargement(false);
     }

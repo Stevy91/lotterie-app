@@ -122,7 +122,7 @@ export default function EcranParametre({ utilisateur, onDeconnecter }: Props) {
           <Text style={styles.boutonTexte}>Numero Gagnant</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={[styles.bouton, styles.boutonPleine, { backgroundColor: '#16a085' }]}
           onPress={telechargerLogo}
           disabled={televersementEnCours}
@@ -132,11 +132,11 @@ export default function EcranParametre({ utilisateur, onDeconnecter }: Props) {
           ) : (
             <Text style={styles.boutonTexte}>Telecharger Logo</Text>
           )}
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
-        <TouchableOpacity style={[styles.bouton, styles.boutonPleine, { backgroundColor: '#dc2626' }]} onPress={onDeconnecter}>
+        {/* <TouchableOpacity style={[styles.bouton, styles.boutonPleine, { backgroundColor: '#dc2626' }]} onPress={onDeconnecter}>
           <Text style={styles.boutonTexte}>Deconnecter</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {logoUrl && (
