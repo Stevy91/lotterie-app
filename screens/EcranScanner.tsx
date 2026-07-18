@@ -104,18 +104,19 @@ export default function EcranScanner({ utilisateur }: Props) {
         onBarcodeScanned={scanEnCours ? undefined : surScan}
       />
 
-      {/* Cadre de visee + consignes */}
-      <View style={styles.calque} pointerEvents="none">
+      {/* Cadre de visee + consignes. box-none : le calque ne bloque pas les
+          touches, mais ses enfants (le bouton) restent cliquables. */}
+      <View style={styles.calque} pointerEvents="box-none">
         <Text style={styles.titre}>Scanner une fiche</Text>
         <View style={styles.cadre} />
         <Text style={styles.consigne}>Vise le QR code au bas de la fiche</Text>
-      </View>
 
-      {/* Secours : saisir le numero de fiche a la main */}
-      <TouchableOpacity style={styles.boutonManuel} onPress={() => setSaisieVisible(true)}>
-        <Ionicons name="keypad-outline" size={18} color="#fff" />
-        <Text style={styles.boutonManuelTexte}>Saisir le numero</Text>
-      </TouchableOpacity>
+        {/* Secours : saisir le numero de fiche a la main (centre, sous le texte) */}
+        <TouchableOpacity style={styles.boutonManuel} onPress={() => setSaisieVisible(true)}>
+          <Ionicons name="keypad-outline" size={18} color="#fff" />
+          <Text style={styles.boutonManuelTexte}>Saisir le numero</Text>
+        </TouchableOpacity>
+      </View>
 
       {saisieVisible && (
         <View style={styles.fondSaisie}>
@@ -243,25 +244,26 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   boutonManuel: {
-    position: 'absolute',
-    top: 50,
-    right: 16,
+    marginTop: 24,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(108,92,231,0.9)',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    backgroundColor: 'rgba(108,92,231,0.95)',
+    borderRadius: 22,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
   },
   boutonManuelTexte: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 14,
   },
   fondSaisie: {
     position: 'absolute',
-    inset: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
