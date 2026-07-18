@@ -153,8 +153,12 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
     // parasite entre les deux lignes.
     await SunmiPrinterLibrary.printText(`#ticket: ${ticket.numero_ticket}\n${zoneNom}\n`);
 
-    await SunmiPrinterLibrary.setAlignment('left');
-    for (const mise of ticket.mises) {
+    // On separe les boules jouees des mariages gratuits « bonus » (generes
+    // automatiquement) : ces derniers s'affichent en bas de la zone, sous un titre.
+    const misesJouees = ticket.mises.filter((m) => !m.mariage_bonus);
+    const mariagesBonus = ticket.mises.filter((m) => m.mariage_bonus);
+
+    const imprimerLigneMise = async (mise: TicketResponse['mises'][number]) => {
       const abrev = abregerTypeJeu(mise.type_jeu.nom);
       // Lotto 4/5 chiffres : suffixe "-1"/"-2"/"-3" pour identifier l'option
       // de combinaison jouee (voir CalculGainService::evaluerLo4/evaluerLo5).
@@ -170,6 +174,22 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
         [4, 11, 15],
         ['left', 'left', 'right']
       );
+    };
+
+    await SunmiPrinterLibrary.setAlignment('left');
+    for (const mise of misesJouees) {
+      await imprimerLigneMise(mise);
+    }
+
+    if (mariagesBonus.length > 0) {
+      await SunmiPrinterLibrary.setAlignment('center');
+      await SunmiPrinterLibrary.setTextStyle('bold', true);
+      await SunmiPrinterLibrary.printText('--- Mariage Gratuit ---\n');
+      await SunmiPrinterLibrary.setTextStyle('bold', false);
+      await SunmiPrinterLibrary.setAlignment('left');
+      for (const mise of mariagesBonus) {
+        await imprimerLigneMise(mise);
+      }
     }
 
     await SunmiPrinterLibrary.printText(SEPARATEUR);

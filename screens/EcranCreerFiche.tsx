@@ -798,7 +798,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
           <View key={t.id}>
             <Text style={styles.numeroTicket}>{t.numero_ticket}</Text>
 
-            {t.mises.map((mise) => (
+            {t.mises.filter((m) => !m.mariage_bonus).map((mise) => (
               <View key={mise.id} style={styles.ligneRecu}>
                 <Text>
                   {mise.tirage.loterie.nom} - {mise.type_jeu.nom} - {mise.numero_2 ? `${mise.numero} x ${mise.numero_2}` : mise.numero}
@@ -807,6 +807,18 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
                 <Text>{Number(mise.montant).toFixed(2)}</Text>
               </View>
             ))}
+
+            {t.mises.some((m) => m.mariage_bonus) && (
+              <>
+                <Text style={styles.titreBonus}>Mariage Gratuit</Text>
+                {t.mises.filter((m) => m.mariage_bonus).map((mise) => (
+                  <View key={mise.id} style={styles.ligneRecu}>
+                    <Text>{mise.type_jeu.nom} - {mise.numero} x {mise.numero_2}</Text>
+                    <Text>gratis</Text>
+                  </View>
+                ))}
+              </>
+            )}
 
             <Text style={styles.totalRecu}>Total: {Number(t.montant_total).toFixed(2)}</Text>
           </View>
@@ -994,7 +1006,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
             maxLength={7}
             value={numero}
             onChangeText={(texte) => setNumero(nettoyerNumeroPrincipal(texte))}
-            placeholder={combinaisonManuelle ? 'Boule 1' : 'Boule (Lo4/Lo5: .1/.2/.3)'}
+            placeholder={combinaisonManuelle ? 'Boule 1' : 'Boule'}
             placeholderTextColor="#999"
           />
           <TouchableOpacity
@@ -1416,6 +1428,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 16,
+  },
+  titreBonus: {
+    textAlign: 'center',
+    fontWeight: '700',
+    color: '#e67e22',
+    marginTop: 8,
+    marginBottom: 4,
   },
   ligneRecu: {
     flexDirection: 'row',

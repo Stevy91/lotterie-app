@@ -44,6 +44,7 @@ export interface MiseResponse {
   numero: string;
   numero_2: string | null;
   option_combinaison: number | null;
+  mariage_bonus?: boolean;
   montant: string;
   gain_potentiel: string;
   gain_reel: string;
