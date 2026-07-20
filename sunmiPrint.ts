@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as SunmiPrinterLibrary from '@mitsuharu/react-native-sunmi-printer-library';
+import * as Application from 'expo-application';
 import * as ImageManipulator from 'expo-image-manipulator';
 
 import { TicketResponse } from './types';
@@ -84,11 +85,14 @@ async function verifierImprimante(): Promise<void> {
   }
 }
 
-// Le numero de serie de l'imprimante integree = numero de serie du terminal
-// Sunmi lui-meme (pas un accessoire separe). Sert a verrouiller un compte
-// sous-agent a son premier appareil (voir auth.ts). Ne doit jamais bloquer
-// la connexion : renvoie null au lieu de lever une erreur (appareil non
-// Sunmi, service indisponible...).
+// Identifiant de l'appareil, utilise pour verrouiller un compte sous-agent a
+// son premier appareil (voir auth.ts) et l'imprimer sur les fiches. Priorite
+// au numero de serie de l'imprimante Sunmi integree (terminal officiel) ;
+// si indisponible (pas un Sunmi, service imprimante hors service...), repli
+// sur l'ANDROID_ID -- ainsi meme un telephone personnel (Samsung...) obtient
+// un identifiant stable et le verrouillage s'applique aussi dans ce cas.
+// Ne doit jamais bloquer la connexion : renvoie null seulement si aucune des
+// deux methodes n'a fonctionne.
 export async function obtenirNumeroSeriePos(): Promise<string | null> {
   if (Platform.OS !== 'android') {
     return null;
@@ -96,7 +100,15 @@ export async function obtenirNumeroSeriePos(): Promise<string | null> {
 
   try {
     const { serialNumber } = await SunmiPrinterLibrary.getPrinterInfo();
-    return serialNumber || null;
+    if (serialNumber) {
+      return serialNumber;
+    }
+  } catch {
+    // Pas un Sunmi ou service imprimante indisponible : on tente le repli ci-dessous.
+  }
+
+  try {
+    return Application.getAndroidId() || null;
   } catch {
     return null;
   }
