@@ -15,7 +15,7 @@ import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
-import { imprimerFichesSunmi } from '../sunmiPrint';
+import { imprimerFichesSunmi, obtenirNumeroSeriePos } from '../sunmiPrint';
 import { TicketResponse } from '../types';
 
 interface Props {
@@ -112,6 +112,7 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
 
     try {
       const config = await obtenirConfiguration();
+      const numeroSeriePos = (await obtenirNumeroSeriePos()) ?? String(utilisateur.id);
       const parent = ticketsFiltres[0].agent?.parent?.name;
       const soi = ticketsFiltres[0].agent?.name ?? utilisateur.name;
 
@@ -119,7 +120,7 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
         nomCompagnie: config.app_name ?? 'Lotterie',
         adresseAgent: ticketsFiltres[0].agent?.adresse,
         adresseProprietaire: ticketsFiltres[0].agent?.proprietaire_adresse,
-        posId: String(utilisateur.id),
+        posId: numeroSeriePos,
         vendeurNom: parent ? `${parent} ${soi}` : soi,
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
         texteFiche: config.text_fiche,

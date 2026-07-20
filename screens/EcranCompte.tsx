@@ -6,7 +6,7 @@ import { alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
-import { imprimerTransactionsSunmi } from '../sunmiPrint';
+import { imprimerTransactionsSunmi, obtenirNumeroSeriePos } from '../sunmiPrint';
 
 interface Props {
   utilisateur: Utilisateur;
@@ -74,6 +74,7 @@ export default function EcranCompte({ utilisateur, onRetour }: Props) {
 
     try {
       const config = await obtenirConfiguration();
+      const numeroSeriePos = (await obtenirNumeroSeriePos()) ?? String(utilisateur.id);
       await imprimerTransactionsSunmi(
         {
           balance: donnees.balance,
@@ -90,7 +91,7 @@ export default function EcranCompte({ utilisateur, onRetour }: Props) {
           nomCompagnie: config.app_name ?? 'Lotterie',
           adresseAgent: utilisateur.adresse,
           adresseProprietaire: utilisateur.proprietaire_adresse,
-          posId: String(utilisateur.id),
+          posId: numeroSeriePos,
           vendeurNom: utilisateur.name,
           logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
           texteFiche: config.text_fiche,

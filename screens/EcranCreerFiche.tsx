@@ -22,7 +22,7 @@ import { Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
 import { Ligne, Tirage, TypeJeu, TicketResponse } from '../types';
 import { genererRecuHtml } from '../receipt';
-import { imprimerFichesSunmi } from '../sunmiPrint';
+import { imprimerFichesSunmi, obtenirNumeroSeriePos } from '../sunmiPrint';
 
 interface Props {
   utilisateur: Utilisateur;
@@ -689,6 +689,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     if (ts.length === 0) return;
     try {
       const config = await obtenirConfiguration();
+      const numeroSeriePos = (await obtenirNumeroSeriePos()) ?? String(utilisateur.id);
       await imprimerFichesSunmi(ts, {
         nomCompagnie: config.app_name ?? 'Lotterie',
         // Une fiche brouillon (apercu, pas encore enregistree) n'a pas de
@@ -696,7 +697,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         // qui EST le vendeur pour toute fiche creee depuis cet ecran.
         adresseAgent: ts[0].agent?.adresse ?? utilisateur.adresse,
         adresseProprietaire: ts[0].agent?.proprietaire_adresse ?? utilisateur.proprietaire_adresse,
-        posId: String(utilisateur.id),
+        posId: numeroSeriePos,
         vendeurNom: nomVendeur(ts[0]),
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
         texteFiche: config.text_fiche,

@@ -5,7 +5,7 @@ import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
-import { abregerTypeJeu, imprimerFichesSunmi } from '../sunmiPrint';
+import { abregerTypeJeu, imprimerFichesSunmi, obtenirNumeroSeriePos } from '../sunmiPrint';
 import { Tirage, TicketResponse } from '../types';
 
 interface Props {
@@ -137,12 +137,15 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
       const config = await obtenirConfiguration();
       const parent = ticket.agent?.parent?.name;
       const vendeurNom = parent ? `${parent} ${ticket.agent?.name}` : (ticket.agent?.name ?? '');
+      // Le numero de serie de CET appareil (celui qui reimprime maintenant),
+      // pas celui du createur d'origine de la fiche.
+      const numeroSeriePos = (await obtenirNumeroSeriePos()) ?? String(ticket.agent?.id ?? '');
 
       await imprimerFichesSunmi([ticket], {
         nomCompagnie: config.app_name ?? 'Lotterie',
         adresseAgent: ticket.agent?.adresse,
         adresseProprietaire: ticket.agent?.proprietaire_adresse,
-        posId: String(ticket.agent?.id ?? ''),
+        posId: numeroSeriePos,
         vendeurNom,
         logoUrl: utilisateur.logo_url ?? config.logo_url,
         texteFiche: config.text_fiche,

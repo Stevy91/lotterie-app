@@ -6,7 +6,7 @@ import { alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
-import { imprimerRapportSunmi, LigneRapport } from '../sunmiPrint';
+import { imprimerRapportSunmi, LigneRapport, obtenirNumeroSeriePos } from '../sunmiPrint';
 import { Loterie } from '../types';
 import EcranCompte from './EcranCompte';
 
@@ -109,11 +109,12 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
 
     try {
       const config = await obtenirConfiguration();
+      const numeroSeriePos = (await obtenirNumeroSeriePos()) ?? String(utilisateur.id);
       await imprimerRapportSunmi(titre, lignes, {
         nomCompagnie: config.app_name ?? 'Lotterie',
         adresseAgent: utilisateur.adresse,
         adresseProprietaire: utilisateur.proprietaire_adresse,
-        posId: String(utilisateur.id),
+        posId: numeroSeriePos,
         vendeurNom: utilisateur.name,
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
         texteFiche: config.text_fiche,
