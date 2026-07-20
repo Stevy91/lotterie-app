@@ -5,6 +5,7 @@ import { obtenirNumeroSeriePos } from './sunmiPrint';
 
 const CLE_TOKEN = 'auth_token';
 const CLE_USER = 'auth_user';
+const CLE_NUMERO_SERIE_POS = 'numero_serie_pos';
 
 export interface Utilisateur {
   id: number;
@@ -50,8 +51,22 @@ export async function connecter(username: string, password: string): Promise<Uti
 
   await setItem(CLE_TOKEN, data.token);
   await setItem(CLE_USER, JSON.stringify(data.user));
+  // Mis en cache pour l'impression : evite de rappeler le SDK Sunmi/Android ID
+  // a chaque fiche imprimee (instable sur certains appareils, capte une seule
+  // fois suffit puisque l'identifiant ne change pas en cours de session).
+  if (numeroSerieAppareil) {
+    await setItem(CLE_NUMERO_SERIE_POS, numeroSerieAppareil);
+  }
 
   return data.user as Utilisateur;
+}
+
+// Numero de serie capte a la connexion (voir connecter() ci-dessus), a
+// utiliser pour l'impression sur les fiches. Simple lecture locale, ne
+// rappelle jamais le SDK natif -- evite le crash observe quand
+// obtenirNumeroSeriePos() etait rappele a chaque impression.
+export async function obtenirNumeroSeriePosStocke(): Promise<string | null> {
+  return getItem(CLE_NUMERO_SERIE_POS);
 }
 
 export async function deconnecter(): Promise<void> {
@@ -66,6 +81,7 @@ export async function deconnecter(): Promise<void> {
 
   await removeItem(CLE_TOKEN);
   await removeItem(CLE_USER);
+  await removeItem(CLE_NUMERO_SERIE_POS);
 }
 
 export async function recupererSession(): Promise<{ token: string; user: Utilisateur } | null> {

@@ -18,11 +18,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { messageErreurReseau } from '../fetchAvecTimeout';
-import { Utilisateur } from '../auth';
+import { obtenirNumeroSeriePosStocke, Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
 import { Ligne, Tirage, TypeJeu, TicketResponse } from '../types';
 import { genererRecuHtml } from '../receipt';
-import { imprimerFichesSunmi, obtenirNumeroSeriePos } from '../sunmiPrint';
+import { imprimerFichesSunmi } from '../sunmiPrint';
 
 interface Props {
   utilisateur: Utilisateur;
@@ -689,7 +689,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     if (ts.length === 0) return;
     try {
       const config = await obtenirConfiguration();
-      const numeroSeriePos = (await obtenirNumeroSeriePos()) ?? String(utilisateur.id);
+      const numeroSeriePos = (await obtenirNumeroSeriePosStocke()) ?? String(utilisateur.id);
       await imprimerFichesSunmi(ts, {
         nomCompagnie: config.app_name ?? 'Lotterie',
         // Une fiche brouillon (apercu, pas encore enregistree) n'a pas de

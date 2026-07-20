@@ -13,9 +13,9 @@ import SelecteurDate from '../composants/SelecteurDate';
 import EcranDetailFiche from './EcranDetailFiche';
 import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
-import { Utilisateur } from '../auth';
+import { obtenirNumeroSeriePosStocke, Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
-import { imprimerFichesSunmi, obtenirNumeroSeriePos } from '../sunmiPrint';
+import { imprimerFichesSunmi } from '../sunmiPrint';
 import { TicketResponse } from '../types';
 
 interface Props {
@@ -112,7 +112,7 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
 
     try {
       const config = await obtenirConfiguration();
-      const numeroSeriePos = (await obtenirNumeroSeriePos()) ?? String(utilisateur.id);
+      const numeroSeriePos = (await obtenirNumeroSeriePosStocke()) ?? String(utilisateur.id);
       const parent = ticketsFiltres[0].agent?.parent?.name;
       const soi = ticketsFiltres[0].agent?.name ?? utilisateur.name;
 

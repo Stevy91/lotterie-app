@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import SelecteurDate from '../composants/SelecteurDate';
 import { alerteSimple } from '../alerte';
 import { appelApi } from '../api';
-import { Utilisateur } from '../auth';
+import { obtenirNumeroSeriePosStocke, Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
-import { imprimerTransactionsSunmi, obtenirNumeroSeriePos } from '../sunmiPrint';
+import { imprimerTransactionsSunmi } from '../sunmiPrint';
 
 interface Props {
   utilisateur: Utilisateur;
@@ -74,7 +74,7 @@ export default function EcranCompte({ utilisateur, onRetour }: Props) {
 
     try {
       const config = await obtenirConfiguration();
-      const numeroSeriePos = (await obtenirNumeroSeriePos()) ?? String(utilisateur.id);
+      const numeroSeriePos = (await obtenirNumeroSeriePosStocke()) ?? String(utilisateur.id);
       await imprimerTransactionsSunmi(
         {
           balance: donnees.balance,
