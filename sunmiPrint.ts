@@ -84,6 +84,24 @@ async function verifierImprimante(): Promise<void> {
   }
 }
 
+// Le numero de serie de l'imprimante integree = numero de serie du terminal
+// Sunmi lui-meme (pas un accessoire separe). Sert a verrouiller un compte
+// sous-agent a son premier appareil (voir auth.ts). Ne doit jamais bloquer
+// la connexion : renvoie null au lieu de lever une erreur (appareil non
+// Sunmi, service indisponible...).
+export async function obtenirNumeroSeriePos(): Promise<string | null> {
+  if (Platform.OS !== 'android') {
+    return null;
+  }
+
+  try {
+    const { serialNumber } = await SunmiPrinterLibrary.getPrinterInfo();
+    return serialNumber || null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Entete commune a toutes les impressions : logo, "***Fiche Original***" (ou
  * le titre fourni), nom de la compagnie, POS, vendeur, adresse et date.

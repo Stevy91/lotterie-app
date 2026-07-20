@@ -1,6 +1,7 @@
 import { API_URL } from './config';
 import { fetchAvecTimeout } from './fetchAvecTimeout';
 import { getItem, removeItem, setItem } from './storage';
+import { obtenirNumeroSeriePos } from './sunmiPrint';
 
 const CLE_TOKEN = 'auth_token';
 const CLE_USER = 'auth_user';
@@ -18,12 +19,18 @@ export interface Utilisateur {
 }
 
 export async function connecter(username: string, password: string): Promise<Utilisateur> {
+  // Lu sur le terminal (numero de serie de l'imprimante Sunmi integree) pour
+  // verrouiller le compte a son premier appareil cote serveur. Best-effort :
+  // null si l'appareil n'est pas un Sunmi ou si la lecture echoue, la
+  // connexion se poursuit normalement (retro-compatible).
+  const numeroSerieAppareil = await obtenirNumeroSeriePos();
+
   let reponse: Response;
   try {
     reponse = await fetchAvecTimeout(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, numero_serie_appareil: numeroSerieAppareil }),
     });
   } catch (e: any) {
     if (e?.message?.includes('trop de temps')) {
