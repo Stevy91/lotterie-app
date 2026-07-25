@@ -3,7 +3,7 @@ import { ActivityIndicator, Image, StyleSheet, Text, TextInput, TouchableOpacity
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { alerteSimple } from './alerte';
@@ -173,74 +173,65 @@ function EcranConnexion({ onConnecte }: { onConnecte: (u: Utilisateur) => void }
   }
 
   return (
-    <View style={styles.fondConnexion}>
-      <StatusBar style="light" />
+    <View style={styles.loginFond}>
+      <StatusBar style="dark" />
 
-      {/* Vague orange en haut : courbes SVG lisses (pas de bords droits) */}
-      <Svg style={styles.svgVagueHaut} viewBox="0 0 375 190" preserveAspectRatio="none">
-        <Path fill="#e8590c" d="M0,0 L375,0 L375,100 C320,138 245,72 170,104 C110,130 45,118 0,102 Z" />
-        <Path fill="#f2994a" d="M0,0 L375,0 L375,48 C330,86 260,34 190,68 C120,104 55,100 0,90 Z" />
+      {/* Fond : degrade doux + vagues bleues superposees en bas (plein ecran). */}
+      <Svg style={StyleSheet.absoluteFill} viewBox="0 0 375 812" preserveAspectRatio="xMidYMid slice">
+        <Defs>
+          <LinearGradient id="fondLogin" x1="0" y1="0" x2="0.35" y2="1">
+            <Stop offset="0" stopColor="#aebdd8" />
+            <Stop offset="0.42" stopColor="#eaf4f2" />
+            <Stop offset="1" stopColor="#6fd0cf" />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="375" height="812" fill="url(#fondLogin)" />
+
+        {/* Vagues (de la plus claire en haut a la plus soutenue en bas). */}
+        <Path fill="#c7d9ef" opacity={0.75} d="M0,532 C90,494 150,556 205,540 C262,523 322,498 375,528 L375,812 L0,812 Z" />
+        <Path fill="#93bddf" opacity={0.7} d="M0,588 C72,558 162,610 232,584 C292,562 332,584 375,568 L375,812 L0,812 Z" />
+        <Path fill="#5aa1d2" opacity={0.75} d="M0,642 C82,616 152,662 222,641 C286,622 336,650 375,626 L375,812 L0,812 Z" />
+        <Path fill="#3a80c2" opacity={0.8} d="M0,700 C92,674 162,716 242,695 C302,679 342,700 375,687 L375,812 L0,812 Z" />
+        <Path fill="#245f9e" opacity={0.9} d="M0,754 C82,736 172,766 250,750 C312,738 346,752 375,744 L375,812 L0,812 Z" />
       </Svg>
 
-      {/* Vague bleue en bas (miroir) */}
-      <Svg style={styles.svgVagueBas} viewBox="0 0 375 190" preserveAspectRatio="none">
-        <Path fill="#1864ab" d="M0,160 L375,160 L375,60 C320,22 245,88 170,56 C110,30 45,42 0,58 Z" />
-        <Path fill="#4dabf7" d="M0,160 L375,160 L375,112 C330,74 260,126 190,92 C120,56 55,60 0,70 Z" />
-      </Svg>
-
-      <View style={styles.carteConnexion}>
+      <View style={styles.loginContenu}>
         {logoUrl ? (
-          <Image source={{ uri: logoUrl }} style={styles.logoConnexion} resizeMode="contain" />
+          <Image source={{ uri: logoUrl }} style={styles.loginLogo} resizeMode="cover" />
         ) : (
-          <View style={styles.logoPlaceholderConnexion}>
-            <Ionicons name="storefront-outline" size={30} color="#bbb" />
+          <View style={styles.loginAvatar}>
+            <Ionicons name="person" size={42} color="#fff" />
           </View>
         )}
 
-        <Text style={styles.titre}>Connexion</Text>
-        {/* {nomCompagnie && <Text style={styles.sousTitreConnexion}>{nomCompagnie}</Text>} */}
-
-        <View style={styles.blocChamps}>
-          <View style={styles.champLigne}>
-            <Ionicons name="person-outline" size={19} color="#8a8a8a" />
-            <TextInput
-              style={styles.inputLigne}
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={username}
-              onChangeText={setUsername}
-              placeholder="Nom d'utilisateur"
-              placeholderTextColor="#a5a5a5"
-            />
-          </View>
-
-          <View style={[styles.champLigne, styles.champLigneSansBordure]}>
-            <Ionicons name="lock-closed-outline" size={19} color="#8a8a8a" />
-            <TextInput
-              style={styles.inputLigne}
-              secureTextEntry={!motDePasseVisible}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Mot de passe"
-              placeholderTextColor="#a5a5a5"
-            />
-            <TouchableOpacity onPress={() => setMotDePasseVisible((v) => !v)}>
-              <Ionicons name={motDePasseVisible ? 'eye-off-outline' : 'eye-outline'} size={19} color="#8a8a8a" />
-            </TouchableOpacity>
-          </View>
+        <View style={styles.loginChamp}>
+          <TextInput
+            style={styles.loginInput}
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={username}
+            onChangeText={setUsername}
+            placeholder="Nom d'utilisateur"
+            placeholderTextColor="rgba(18,45,80,0.5)"
+          />
         </View>
 
-        <TouchableOpacity style={styles.boutonPilule} onPress={seConnecter} disabled={enCours} activeOpacity={0.85}>
-          {enCours ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Text style={styles.boutonPiluleTexte}>Se connecter</Text>
-              <View style={styles.cercleFleche}>
-                <Ionicons name="arrow-forward" size={16} color="#5b6ef5" />
-              </View>
-            </>
-          )}
+        <View style={[styles.loginChamp, styles.loginChampMotDePasse]}>
+          <TextInput
+            style={[styles.loginInput, { flex: 1 }]}
+            secureTextEntry={!motDePasseVisible}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Mot de passe"
+            placeholderTextColor="rgba(18,45,80,0.5)"
+          />
+          <TouchableOpacity onPress={() => setMotDePasseVisible((v) => !v)} hitSlop={10}>
+            <Ionicons name={motDePasseVisible ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(18,45,80,0.6)" />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.loginBouton} onPress={seConnecter} disabled={enCours} activeOpacity={0.85}>
+          {enCours ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginBoutonTexte}>Se connecter</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -260,163 +251,76 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
-  fondConnexion: {
+  loginFond: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#fff',
+    backgroundColor: '#cfe0ee',
     overflow: 'hidden',
   },
-  svgVagueHaut: {
-    position: 'absolute',
-    top: -30,
-    left: 0,
-    right: 0,
-    height: 190,
-  },
-  svgVagueBas: {
-    position: 'absolute',
-    bottom: -50,
-    left: 0,
-    right: 0,
-    height: 190,
-  },
-  carteConnexion: {
-    width: '100%',
-    maxWidth: 360,
-    alignItems: 'center',
-  },
-  blocChamps: {
-    width: '100%',
-    marginTop: 24,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  champLigne: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ececec',
-    paddingVertical: 4,
-  },
-  champLigneSansBordure: {
-    borderBottomWidth: 0,
-  },
-  inputLigne: {
+  loginContenu: {
     flex: 1,
-    paddingVertical: 13,
-    fontSize: 15,
-    color: '#222',
+    alignItems: 'center',
+    paddingTop: 150,
+    paddingHorizontal: 30,
   },
-  boutonPilule: {
-    flexDirection: 'row',
+  loginAvatar: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: '#123a63',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    width: '100%',
-    marginTop: 26,
-    backgroundColor: '#8c9bf7',
-    borderRadius: 30,
-    paddingVertical: 15,
-    shadowColor: '#5b6ef5',
-    shadowOpacity: 0.35,
+    marginBottom: 44,
+    shadowColor: '#0b2540',
+    shadowOpacity: 0.3,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  boutonPiluleTexte: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  cercleFleche: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoConnexion: {
+  loginLogo: {
     width: 84,
     height: 84,
-    borderRadius: 18,
+    borderRadius: 42,
+    marginBottom: 44,
     backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#eee',
-    marginBottom: 16,
-    padding: 6,
   },
-  logoPlaceholderConnexion: {
-    width: 84,
-    height: 84,
-    borderRadius: 18,
-    backgroundColor: '#f5f6fa',
+  loginChamp: {
+    width: '100%',
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.4)',
     borderWidth: 1,
-    borderColor: '#eee',
-    alignItems: 'center',
+    borderColor: 'rgba(255,255,255,0.55)',
+    paddingHorizontal: 18,
     justifyContent: 'center',
     marginBottom: 16,
   },
-  titre: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#222',
-  },
-  sousTitreConnexion: {
-    color: '#888',
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  label: {
-    fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 6,
-    color: '#444',
-    alignSelf: 'flex-start',
-  },
-  champAvecIcone: {
+  loginChampMotDePasse: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  loginInput: {
+    fontSize: 15,
+    color: '#123a5a',
+    paddingVertical: 0,
+  },
+  loginBouton: {
     width: '100%',
-    borderWidth: 1,
-    borderColor: '#e2e2e2',
-    backgroundColor: '#fafafa',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-  },
-  inputAvecIcone: {
-    flex: 1,
-    paddingVertical: 12,
-    color: '#222',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-  },
-  bouton: {
-    width: '100%',
-    backgroundColor: '#2563eb',
-    borderRadius: 8,
-    padding: 14,
+    height: 54,
+    borderRadius: 28,
+    backgroundColor: '#123a63',
     alignItems: 'center',
-    marginTop: 12,
+    justifyContent: 'center',
+    marginTop: 14,
+    shadowColor: '#0b2540',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
-  boutonTexte: {
+  loginBoutonTexte: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });
