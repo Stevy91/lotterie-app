@@ -187,14 +187,10 @@ function EcranConnexion({ onConnecte }: { onConnecte: (u: Utilisateur) => void }
         </Defs>
         <Rect x="0" y="0" width="375" height="812" fill="url(#fondLogin)" />
 
-        {/* Vagues : rubans diagonaux et fluides qui balaient vers le haut a droite,
-            de la plus claire (au fond) a la plus soutenue (devant, en bas). */}
+        {/* Vagues : rubans diagonaux et fluides qui balaient vers le haut a droite. */}
         <Path fill="#cddff2" opacity={0.8} d="M0,470 C100,520 210,548 300,512 C338,497 358,500 375,492 L375,812 L0,812 Z" />
         <Path fill="#eaf3fb" opacity={0.55} d="M0,556 C120,508 230,468 375,500 L375,812 L0,812 Z" />
         <Path fill="#86c1d9" opacity={0.55} d="M0,600 C120,556 230,602 320,588 C348,584 362,588 375,586 L375,812 L0,812 Z" />
-        <Path fill="#66a4d4" opacity={0.72} d="M0,640 C100,678 205,704 300,678 C340,668 360,674 375,670 L375,812 L0,812 Z" />
-        <Path fill="#3f86c4" opacity={0.82} d="M0,712 C110,680 220,720 320,701 C348,696 362,701 375,698 L375,812 L0,812 Z" />
-        <Path fill="#245f9e" opacity={0.92} d="M0,762 C110,744 220,774 320,758 C348,753 362,760 375,756 L375,812 L0,812 Z" />
       </Svg>
 
       <View style={styles.loginContenu}>
