@@ -238,16 +238,47 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
         <View style={styles.grilleBoutons}>
-          <TouchableOpacity style={[styles.boutonType, { backgroundColor: '#d9a441' }]} onPress={ouvrirPartiel}>
+          <TouchableOpacity
+            style={[styles.boutonType, { backgroundColor: '#d9a441' }, rapportActif === 'partiel' && styles.boutonTypeActif]}
+            activeOpacity={0.85}
+            onPress={ouvrirPartiel}
+          >
+            <View style={styles.iconeCercle}>
+              <Ionicons name="pie-chart-outline" size={20} color="#fff" />
+            </View>
             <Text style={styles.boutonTypeTexte}>PARTIEL</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.boutonType, { backgroundColor: '#2563eb' }]} onPress={ouvrirFinTirage}>
+
+          <TouchableOpacity
+            style={[styles.boutonType, { backgroundColor: '#2563eb' }, rapportActif === 'fin_tirage' && styles.boutonTypeActif]}
+            activeOpacity={0.85}
+            onPress={ouvrirFinTirage}
+          >
+            <View style={styles.iconeCercle}>
+              <Ionicons name="flag-outline" size={20} color="#fff" />
+            </View>
             <Text style={styles.boutonTypeTexte}>FIN TIRAGE</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.boutonType, { backgroundColor: '#e67e22' }]} onPress={ouvrirFicheGagnant}>
+
+          <TouchableOpacity
+            style={[styles.boutonType, { backgroundColor: '#e67e22' }, rapportActif === 'f_gagnant' && styles.boutonTypeActif]}
+            activeOpacity={0.85}
+            onPress={ouvrirFicheGagnant}
+          >
+            <View style={styles.iconeCercle}>
+              <Ionicons name="trophy-outline" size={20} color="#fff" />
+            </View>
             <Text style={styles.boutonTypeTexte}>F.GAGNANT</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.boutonType, { backgroundColor: '#dc2626' }]} onPress={() => setTransactionOuvert(true)}>
+
+          <TouchableOpacity
+            style={[styles.boutonType, { backgroundColor: '#dc2626' }]}
+            activeOpacity={0.85}
+            onPress={() => setTransactionOuvert(true)}
+          >
+            <View style={styles.iconeCercle}>
+              <Ionicons name="swap-horizontal-outline" size={20} color="#fff" />
+            </View>
             <Text style={styles.boutonTypeTexte}>TRANSACTION</Text>
           </TouchableOpacity>
         </View>
@@ -394,17 +425,37 @@ const styles = StyleSheet.create({
   grilleBoutons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
   boutonType: {
-    width: '48%',
-    borderRadius: 8,
-    paddingVertical: 18,
+    width: '47%',
+    flexGrow: 1,
+    borderRadius: 16,
+    padding: 14,
+    minHeight: 92,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  boutonTypeActif: {
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+  iconeCercle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   boutonTypeTexte: {
     color: '#fff',
     fontWeight: '700',
+    fontSize: 14,
   },
   iconeImprimante: {
     alignSelf: 'center',

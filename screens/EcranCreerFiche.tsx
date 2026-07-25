@@ -860,6 +860,14 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         <TouchableOpacity onPress={viderTout} style={[styles.iconeBarre, styles.iconeBarreCercle]} activeOpacity={0.7}>
           <Ionicons name="trash" size={19} color="#fff" />
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={chargerDonnees}
+          style={[styles.iconeBarre, styles.iconeBarreCercle]}
+          activeOpacity={0.7}
+          disabled={chargement}
+        >
+          {chargement ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="refresh" size={20} color="#fff" />}
+        </TouchableOpacity>
         <TouchableOpacity onPress={imprimerApercu} style={[styles.iconeBarre, styles.iconeBarreCercle]} activeOpacity={0.7}>
           <Ionicons name="document-text-outline" size={19} color="#fff" />
         </TouchableOpacity>

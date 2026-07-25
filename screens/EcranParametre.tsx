@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { alerteSimple } from '../alerte';
 import { appelApi, appelApiFichier } from '../api';
 import { Utilisateur } from '../auth';
+import EcranCommission from './EcranCommission';
 import EcranCompte from './EcranCompte';
 import EcranNumeroGagnant from './EcranNumeroGagnant';
 import EcranTirageDisponible from './EcranTirageDisponible';
@@ -19,7 +21,7 @@ function bientotDisponible(fonctionnalite: string) {
 
 export default function EcranParametre({ utilisateur, onDeconnecter }: Props) {
   const [configuration, setConfiguration] = useState<Record<string, string>>({});
-  const [sousEcran, setSousEcran] = useState<'accueil' | 'compte' | 'tirages' | 'numeros-gagnants'>('accueil');
+  const [sousEcran, setSousEcran] = useState<'accueil' | 'compte' | 'tirages' | 'numeros-gagnants' | 'commission'>('accueil');
   const [logoUrl, setLogoUrl] = useState<string | null>(utilisateur.logo_url);
   const [televersementEnCours, setTeleversementEnCours] = useState(false);
 
@@ -91,52 +93,58 @@ export default function EcranParametre({ utilisateur, onDeconnecter }: Props) {
     return <EcranNumeroGagnant onRetour={() => setSousEcran('accueil')} />;
   }
 
+  if (sousEcran === 'commission') {
+    return <EcranCommission utilisateur={utilisateur} onRetour={() => setSousEcran('accueil')} />;
+  }
+
   return (
     <ScrollView style={styles.conteneur} contentContainerStyle={{ paddingBottom: 40 }}>
       <Text style={styles.titre}>Parametre</Text>
 
       <View style={styles.grille}>
         <TouchableOpacity
-          style={[styles.bouton, styles.boutonMoitie, { backgroundColor: '#e67e22' }]}
+          style={[styles.carteBouton, { backgroundColor: '#e67e22' }]}
+          activeOpacity={0.85}
           onPress={() => setSousEcran('compte')}
         >
+          <View style={styles.iconeCercle}>
+            <Ionicons name="wallet-outline" size={22} color="#fff" />
+          </View>
           <Text style={styles.boutonTexte}>Compte $</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
-          style={[styles.bouton, styles.boutonMoitie, { backgroundColor: '#2563eb' }]}
+          style={[styles.carteBouton, { backgroundColor: '#2563eb' }]}
+          activeOpacity={0.85}
           onPress={() => setSousEcran('tirages')}
         >
+          <View style={styles.iconeCercle}>
+            <Ionicons name="calendar-outline" size={22} color="#fff" />
+          </View>
           <Text style={styles.boutonTexte}>Tirage Disponible</Text>
         </TouchableOpacity>
 
-        {/* <TouchableOpacity
-          style={[styles.bouton, styles.boutonMoitie, { backgroundColor: '#2563eb' }]}
-          onPress={() => bientotDisponible('Imprimante & avance')}
-        >
-          <Text style={styles.boutonTexte}>Imprimante & avance</Text>
-        </TouchableOpacity> */}
         <TouchableOpacity
-          style={[styles.bouton, styles.boutonMoitie, { backgroundColor: '#e67e22' }]}
+          style={[styles.carteBouton, { backgroundColor: '#f59e0b' }]}
+          activeOpacity={0.85}
           onPress={() => setSousEcran('numeros-gagnants')}
         >
+          <View style={styles.iconeCercle}>
+            <Ionicons name="trophy-outline" size={22} color="#fff" />
+          </View>
           <Text style={styles.boutonTexte}>Numero Gagnant</Text>
         </TouchableOpacity>
 
-        {/* <TouchableOpacity
-          style={[styles.bouton, styles.boutonPleine, { backgroundColor: '#16a085' }]}
-          onPress={telechargerLogo}
-          disabled={televersementEnCours}
+        <TouchableOpacity
+          style={[styles.carteBouton, { backgroundColor: '#16a34a' }]}
+          activeOpacity={0.85}
+          onPress={() => setSousEcran('commission')}
         >
-          {televersementEnCours ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.boutonTexte}>Telecharger Logo</Text>
-          )}
-        </TouchableOpacity> */}
-
-        {/* <TouchableOpacity style={[styles.bouton, styles.boutonPleine, { backgroundColor: '#dc2626' }]} onPress={onDeconnecter}>
-          <Text style={styles.boutonTexte}>Deconnecter</Text>
-        </TouchableOpacity> */}
+          <View style={styles.iconeCercle}>
+            <Ionicons name="cash-outline" size={22} color="#fff" />
+          </View>
+          <Text style={styles.boutonTexte}>Ma commission</Text>
+        </TouchableOpacity>
       </View>
 
       {logoUrl && (
@@ -194,23 +202,33 @@ const styles = StyleSheet.create({
   grille: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
   },
-  bouton: {
-    borderRadius: 10,
-    paddingVertical: 18,
+  carteBouton: {
+    width: '47%',
+    flexGrow: 1,
+    borderRadius: 16,
+    padding: 16,
+    minHeight: 104,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  iconeCercle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  boutonMoitie: {
-    width: '48%',
-  },
-  boutonPleine: {
-    width: '100%',
-  },
   boutonTexte: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '700',
+    fontSize: 15,
   },
   infos: {
     marginTop: 24,
