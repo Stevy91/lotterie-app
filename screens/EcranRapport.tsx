@@ -41,10 +41,10 @@ function formaterDateAffichage(date: Date): string {
 
 export default function EcranRapport({ utilisateur, onRetour }: Props) {
   const [rapportActif, setRapportActif] = useState<'fin_tirage' | 'partiel' | 'f_gagnant' | null>(null);
-  const [dateDebut, setDateDebut] = useState(new Date(2025, 10, 1));
+  const [dateDebut, setDateDebut] = useState(new Date());
   const [dateFin, setDateFin] = useState(new Date());
   const [datePartiel, setDatePartiel] = useState(new Date());
-  const [dateGagnantDebut, setDateGagnantDebut] = useState(new Date(2025, 10, 1));
+  const [dateGagnantDebut, setDateGagnantDebut] = useState(new Date());
   const [dateGagnantFin, setDateGagnantFin] = useState(new Date());
   const [loteries, setLoteries] = useState<Loterie[]>([]);
   const [loterieChoisie, setLoterieChoisie] = useState<Loterie | null>(null);
