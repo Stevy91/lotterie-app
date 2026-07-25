@@ -187,12 +187,14 @@ function EcranConnexion({ onConnecte }: { onConnecte: (u: Utilisateur) => void }
         </Defs>
         <Rect x="0" y="0" width="375" height="812" fill="url(#fondLogin)" />
 
-        {/* Vagues (de la plus claire en haut a la plus soutenue en bas). */}
-        <Path fill="#c7d9ef" opacity={0.75} d="M0,532 C90,494 150,556 205,540 C262,523 322,498 375,528 L375,812 L0,812 Z" />
-        <Path fill="#93bddf" opacity={0.7} d="M0,588 C72,558 162,610 232,584 C292,562 332,584 375,568 L375,812 L0,812 Z" />
-        <Path fill="#5aa1d2" opacity={0.75} d="M0,642 C82,616 152,662 222,641 C286,622 336,650 375,626 L375,812 L0,812 Z" />
-        <Path fill="#3a80c2" opacity={0.8} d="M0,700 C92,674 162,716 242,695 C302,679 342,700 375,687 L375,812 L0,812 Z" />
-        <Path fill="#245f9e" opacity={0.9} d="M0,754 C82,736 172,766 250,750 C312,738 346,752 375,744 L375,812 L0,812 Z" />
+        {/* Vagues : rubans diagonaux et fluides qui balaient vers le haut a droite,
+            de la plus claire (au fond) a la plus soutenue (devant, en bas). */}
+        <Path fill="#cddff2" opacity={0.8} d="M0,470 C100,520 210,548 300,512 C338,497 358,500 375,492 L375,812 L0,812 Z" />
+        <Path fill="#eaf3fb" opacity={0.55} d="M0,556 C120,508 230,468 375,500 L375,812 L0,812 Z" />
+        <Path fill="#86c1d9" opacity={0.55} d="M0,600 C120,556 230,602 320,588 C348,584 362,588 375,586 L375,812 L0,812 Z" />
+        <Path fill="#66a4d4" opacity={0.72} d="M0,640 C100,678 205,704 300,678 C340,668 360,674 375,670 L375,812 L0,812 Z" />
+        <Path fill="#3f86c4" opacity={0.82} d="M0,712 C110,680 220,720 320,701 C348,696 362,701 375,698 L375,812 L0,812 Z" />
+        <Path fill="#245f9e" opacity={0.92} d="M0,762 C110,744 220,774 320,758 C348,753 362,760 375,756 L375,812 L0,812 Z" />
       </Svg>
 
       <View style={styles.loginContenu}>
@@ -308,14 +310,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 54,
     borderRadius: 28,
-    backgroundColor: '#123a63',
+    backgroundColor: '#8c9bf7',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 14,
-    shadowColor: '#0b2540',
-    shadowOpacity: 0.3,
+    shadowColor: '#5b6ef5',
+    shadowOpacity: 0.35,
     shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 5 },
     elevation: 5,
   },
   loginBoutonTexte: {
