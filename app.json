@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/logo-lotto.png",
+      "image": "./assets/logo-lotto-splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo-lotto.png",
+        "foregroundImage": "./assets/logo-lotto-splash.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
