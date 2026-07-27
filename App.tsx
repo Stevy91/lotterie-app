@@ -32,15 +32,20 @@ export default function App() {
       .finally(() => setVerificationSession(false));
   }, []);
 
-  // Suspension immediate : si le serveur repond « compte suspendu » (403) sur
-  // n'importe quel appel, on vide la session et on renvoie a l'ecran de connexion.
+  // Session invalidee : compte suspendu (403) OU token revoque/expire (401,
+  // typiquement quand le proprietaire/agent est suspendu et que les tokens du
+  // reseau sont supprimes). Dans les deux cas on vide la session et on renvoie
+  // a l'ecran de connexion au lieu de laisser l'app planter.
   useEffect(() => {
     definirGestionnaireSuspension(() => {
       deconnecter().catch(() => {});
       setUtilisateur(null);
       setOnglet('fiche');
       setEcran('accueil');
-      alerteSimple('Compte suspendu', "Ce compte a ete suspendu. Contacte ton administrateur pour plus d'informations.");
+      alerteSimple(
+        'Session terminee',
+        "Ce compte a ete suspendu ou ta session a expire. Reconnecte-toi. Si le probleme persiste, contacte ton administrateur."
+      );
     });
     return () => definirGestionnaireSuspension(null);
   }, []);
