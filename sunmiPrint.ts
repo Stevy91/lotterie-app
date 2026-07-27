@@ -6,6 +6,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { TicketResponse } from './types';
 
 const LARGEUR_PAPIER_PIXELS = 384; // papier 58mm
+const LARGEUR_LOGO_PIXELS = 180; // logo imprime plus petit que la pleine largeur
 const SEPARATEUR = '********************************\n';
 
 export interface EnteteRecu {
@@ -14,6 +15,9 @@ export interface EnteteRecu {
   adresseAgent?: string | null;
   // "Central" : l'adresse du proprietaire (client) auquel appartient le vendeur.
   adresseProprietaire?: string | null;
+  // Telephones imprimes sur la fiche : celui du vendeur et celui du proprietaire.
+  telephoneAgent?: string | null;
+  telephoneProprietaire?: string | null;
   posId: string;
   vendeurNom: string;
   logoUrl?: string | null;
@@ -47,6 +51,14 @@ function formaterDate(date: Date): string {
   return date.toLocaleString('fr-FR');
 }
 
+// Affiche un telephone au format +509 XXXXXXXX (prefixe ajoute s'il manque).
+function formaterTelephone(tel?: string | null): string {
+  if (!tel) return '';
+  const t = String(tel).trim();
+  if (!t) return '';
+  return t.startsWith('+') ? t : `+509 ${t}`;
+}
+
 async function logoEnDataUri(logoUrl: string): Promise<string | null> {
   try {
     // Les logos uploades par les proprietaires peuvent faire plusieurs
@@ -55,7 +67,7 @@ async function logoEnDataUri(logoUrl: string): Promise<string | null> {
     // d'une trop grande image plante silencieusement sur le Sunmi (peu de RAM).
     const resultat = await ImageManipulator.manipulateAsync(
       logoUrl,
-      [{ resize: { width: LARGEUR_PAPIER_PIXELS } }],
+      [{ resize: { width: LARGEUR_LOGO_PIXELS } }],
       { base64: true, format: ImageManipulator.SaveFormat.PNG }
     );
     if (!resultat.base64) return null;
@@ -123,7 +135,7 @@ async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> 
     const dataUri = await logoEnDataUri(entete.logoUrl);
     if (dataUri) {
       await SunmiPrinterLibrary.setAlignment('center');
-      await SunmiPrinterLibrary.printImage(dataUri, LARGEUR_PAPIER_PIXELS, 'grayscale');
+      await SunmiPrinterLibrary.printImage(dataUri, LARGEUR_LOGO_PIXELS, 'grayscale');
       await SunmiPrinterLibrary.lineWrap(1);
     }
   }
@@ -140,11 +152,18 @@ async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> 
   await SunmiPrinterLibrary.setAlignment('center');
   // Un seul appel pour les 5 lignes : des appels printText() separes
   // inserent un espace parasite entre chaque ligne sur le Sunmi.
+  const telAgent = formaterTelephone(entete.telephoneAgent);
+  const telProprietaire = formaterTelephone(entete.telephoneProprietaire);
+  const ligneTel = telAgent || telProprietaire
+    ? `Tel: ${telAgent || '-'} / ${telProprietaire || '-'}\n`
+    : '';
+
   await SunmiPrinterLibrary.printText(
     `POS: ${entete.posId}\n` +
       `Vendeur: ${entete.vendeurNom}\n` +
       `Addresse : ${entete.adresseAgent || '-'}\n` +
       `Central: ${entete.adresseProprietaire || '-'}\n` +
+      ligneTel +
       `Date: ${formaterDate(new Date())}\n`
   );
   await SunmiPrinterLibrary.printText(SEPARATEUR);

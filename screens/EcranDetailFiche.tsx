@@ -145,6 +145,8 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
         nomCompagnie: config.app_name ?? 'Lotterie',
         adresseAgent: ticket.agent?.adresse,
         adresseProprietaire: ticket.agent?.proprietaire_adresse,
+        telephoneAgent: utilisateur.telephone,
+        telephoneProprietaire: utilisateur.proprietaire_telephone,
         posId: numeroSeriePos,
         vendeurNom,
         logoUrl: utilisateur.logo_url ?? config.logo_url,

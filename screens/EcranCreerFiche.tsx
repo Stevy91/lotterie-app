@@ -697,6 +697,8 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         // qui EST le vendeur pour toute fiche creee depuis cet ecran.
         adresseAgent: ts[0].agent?.adresse ?? utilisateur.adresse,
         adresseProprietaire: ts[0].agent?.proprietaire_adresse ?? utilisateur.proprietaire_adresse,
+        telephoneAgent: utilisateur.telephone,
+        telephoneProprietaire: utilisateur.proprietaire_telephone,
         posId: numeroSeriePos,
         vendeurNom: nomVendeur(ts[0]),
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,

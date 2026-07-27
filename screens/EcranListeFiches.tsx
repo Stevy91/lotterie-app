@@ -120,6 +120,8 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
         nomCompagnie: config.app_name ?? 'Lotterie',
         adresseAgent: ticketsFiltres[0].agent?.adresse,
         adresseProprietaire: ticketsFiltres[0].agent?.proprietaire_adresse,
+        telephoneAgent: utilisateur.telephone,
+        telephoneProprietaire: utilisateur.proprietaire_telephone,
         posId: numeroSeriePos,
         vendeurNom: parent ? `${parent} ${soi}` : soi,
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,

@@ -17,6 +17,8 @@ export interface Utilisateur {
   logo_url: string | null;
   adresse: string | null;
   proprietaire_adresse: string | null;
+  telephone: string | null;
+  proprietaire_telephone: string | null;
 }
 
 export async function connecter(username: string, password: string): Promise<Utilisateur> {
