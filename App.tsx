@@ -200,7 +200,7 @@ function EcranConnexion({ onConnecte }: { onConnecte: (u: Utilisateur) => void }
 
       <View style={styles.loginContenu}>
         {logoUrl ? (
-          <Image source={{ uri: logoUrl }} style={styles.loginLogo} resizeMode="cover" />
+          <Image source={{ uri: logoUrl }} style={styles.loginLogo} resizeMode="contain" />
         ) : (
           <View style={styles.loginAvatar}>
             <Ionicons name="person" size={42} color="#fff" />
@@ -280,11 +280,12 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   loginLogo: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    marginBottom: 44,
+    width: 150,
+    height: 90,
+    borderRadius: 16,
+    marginBottom: 36,
     backgroundColor: '#fff',
+    padding: 6,
   },
   loginChamp: {
     width: '100%',
