@@ -5,7 +5,7 @@ import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { obtenirNumeroSeriePosStocke, Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
-import { abregerTypeJeu, imprimerFichesSunmi } from '../sunmiPrint';
+import { abregerMise, imprimerFichesSunmi } from '../sunmiPrint';
 import { Tirage, TicketResponse } from '../types';
 
 interface Props {
@@ -248,7 +248,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
           const misesGagnee = mise.statut === 'gagnant';
           return (
             <View key={mise.id} style={styles.ligneTableau}>
-              <Text style={[styles.cellule, { flex: 0.9 }]}>{abregerTypeJeu(mise.type_jeu.nom)}</Text>
+              <Text style={[styles.cellule, { flex: 0.9 }]}>{abregerMise(mise)}</Text>
               <View style={{ flex: 1 }}>
                 {mise.option_combinaison && (
                   <View style={styles.badgeOption}>

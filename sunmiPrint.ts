@@ -47,6 +47,27 @@ export function abregerTypeJeu(nomTypeJeu: string): string {
   return 'BO';
 }
 
+// Abreviation ROBUSTE d'une mise, basee sur les ATTRIBUTS du type (pas son nom,
+// qui a pu etre renomme dans le backoffice) : MA (mariage/combinaison),
+// Lo3..Lo7 (loto), BO (boule simple : BPaire, Reverse, P0-P9...).
+export function abregerMise(mise: {
+  numero_2?: string | null;
+  type_jeu: { est_combinaison?: boolean; nombre_chiffres?: number };
+}): string {
+  const type = mise.type_jeu;
+
+  if (mise.numero_2 || type.est_combinaison) {
+    return 'MA';
+  }
+
+  const chiffres = type.nombre_chiffres ?? 2;
+  if (chiffres >= 3 && chiffres <= 7) {
+    return `Lo${chiffres}`;
+  }
+
+  return 'BO';
+}
+
 function formaterDate(date: Date): string {
   return date.toLocaleString('fr-FR');
 }
@@ -208,11 +229,7 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
     const mariagesBonus = ticket.mises.filter((m) => m.mariage_bonus);
 
     const imprimerLigneMise = async (mise: TicketResponse['mises'][number]) => {
-      // Un mariage se reconnait a son 2e numero (ou au flag combinaison) : on
-      // l'etiquette "MA" quel que soit le nom du type (il a pu etre renomme),
-      // au lieu de retomber sur "BO".
-      const estMariage = !!mise.numero_2 || mise.type_jeu.est_combinaison;
-      const abrev = estMariage ? 'MA' : abregerTypeJeu(mise.type_jeu.nom);
+      const abrev = abregerMise(mise);
       // Lotto 4/5 chiffres : suffixe "-1"/"-2"/"-3" pour identifier l'option
       // de combinaison jouee (voir CalculGainService::evaluerLo4/evaluerLo5).
       const suffixeOption = mise.option_combinaison ? `-${mise.option_combinaison}` : '';
