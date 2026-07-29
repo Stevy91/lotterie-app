@@ -208,7 +208,11 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
     const mariagesBonus = ticket.mises.filter((m) => m.mariage_bonus);
 
     const imprimerLigneMise = async (mise: TicketResponse['mises'][number]) => {
-      const abrev = abregerTypeJeu(mise.type_jeu.nom);
+      // Un mariage se reconnait a son 2e numero (ou au flag combinaison) : on
+      // l'etiquette "MA" quel que soit le nom du type (il a pu etre renomme),
+      // au lieu de retomber sur "BO".
+      const estMariage = !!mise.numero_2 || mise.type_jeu.est_combinaison;
+      const abrev = estMariage ? 'MA' : abregerTypeJeu(mise.type_jeu.nom);
       // Lotto 4/5 chiffres : suffixe "-1"/"-2"/"-3" pour identifier l'option
       // de combinaison jouee (voir CalculGainService::evaluerLo4/evaluerLo5).
       const suffixeOption = mise.option_combinaison ? `-${mise.option_combinaison}` : '';
