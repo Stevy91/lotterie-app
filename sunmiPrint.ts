@@ -151,7 +151,7 @@ export async function obtenirNumeroSeriePos(): Promise<string | null> {
  * Entete commune a toutes les impressions : logo, "***Fiche Original***" (ou
  * le titre fourni), nom de la compagnie, POS, vendeur, adresse et date.
  */
-async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> {
+async function imprimerEntete(entete: EnteteRecu, titre: string, dateCreation?: Date): Promise<void> {
   if (entete.logoUrl) {
     const dataUri = await logoEnDataUri(entete.logoUrl);
     if (dataUri) {
@@ -185,7 +185,7 @@ async function imprimerEntete(entete: EnteteRecu, titre: string): Promise<void> 
       `Addresse : ${entete.adresseAgent || '-'}\n` +
       `Central: ${entete.adresseProprietaire || '-'}\n` +
       ligneTel +
-      `Date: ${formaterDate(new Date())}\n`
+      `Date: ${formaterDate(dateCreation ?? new Date())}\n`
   );
   await SunmiPrinterLibrary.printText(SEPARATEUR);
 }
@@ -212,7 +212,11 @@ async function imprimerPied(texteFiche?: string | null): Promise<void> {
  */
 export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: EnteteRecu): Promise<void> {
   await verifierImprimante();
-  await imprimerEntete(entete, '***Fiche Original***');
+  // Date d'en-tete = date de CREATION du ticket (pas la date d'impression) :
+  // une fiche reimprimee 2 jours apres garde ainsi sa date d'origine. La date
+  // d'impression reelle reste affichee en bas (« Impression: ... »).
+  const dateCreation = tickets[0]?.created_at ? new Date(tickets[0].created_at) : new Date();
+  await imprimerEntete(entete, '***Fiche Original***', dateCreation);
 
   let grandTotal = 0;
 
@@ -232,7 +236,7 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
       const abrev = abregerMise(mise);
       // Lotto 4/5 chiffres : suffixe "-1"/"-2"/"-3" pour identifier l'option
       // de combinaison jouee (voir CalculGainService::evaluerLo4/evaluerLo5).
-      const suffixeOption = mise.option_combinaison ? `-${mise.option_combinaison}` : '';
+      const suffixeOption = mise.option_combinaison ? `(${mise.option_combinaison})` : '';
       const numero = mise.numero_2 ? `${mise.numero}*${mise.numero_2}` : `${mise.numero}${suffixeOption}`;
       const montant = Number(mise.montant);
       const montantTexte = montant === 0 ? 'gratis' : `${montant.toFixed(2)} HTG`;
