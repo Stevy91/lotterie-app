@@ -32,6 +32,19 @@ interface Props {
 const DEVISE = 'HTG';
 const COULEURS_JEUX = ['#0d9488', '#2563eb', '#7c3aed', '#dc2626', '#16a34a', '#f59e0b'];
 
+// Couleur d'un bouton de type de jeu : Lotto (3-7 chiffres) tous en ROUGE,
+// Pointe (P0-P9) tous en VERT (le meme vert que la zone selectionnee), le reste
+// garde une couleur de la palette selon son index.
+function couleurBoutonJeu(tj: TypeJeu, index: number): string {
+  if (!tj.est_combinaison && tj.nombre_chiffres >= 3) {
+    return '#dc2626'; // Lotto -> rouge
+  }
+  if (/^p\d$/.test(tj.generation_auto ?? '')) {
+    return '#16a34a'; // Pointe P0-P9 -> vert (identique a la zone selectionnee)
+  }
+  return COULEURS_JEUX[index % COULEURS_JEUX.length];
+}
+
 // Empeche toute lettre : ne garde que les chiffres.
 function nettoyerNumero(texte: string): string {
   return texte.replace(/[^0-9]/g, '');
@@ -990,7 +1003,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
             key={tj.id}
             style={[
               styles.boutonCouleur,
-              { backgroundColor: COULEURS_JEUX[index % COULEURS_JEUX.length] },
+              { backgroundColor: couleurBoutonJeu(tj, index) },
             ]}
             onPress={() => selectionnerTypeJeu(tj)}
           >
