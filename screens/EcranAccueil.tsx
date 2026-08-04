@@ -83,12 +83,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     marginTop: 40,
-    borderRadius: 16,
     alignSelf: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
-    padding: 8,
   },
   logoPlaceholder: {
     width: 100,
