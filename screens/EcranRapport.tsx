@@ -405,6 +405,7 @@ function LigneDetail({ label, valeur }: { label: string; valeur: string }) {
 const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   entete: {
     flexDirection: 'row',

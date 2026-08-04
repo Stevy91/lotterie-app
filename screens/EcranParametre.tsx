@@ -180,6 +180,7 @@ export default function EcranParametre({ utilisateur, onDeconnecter }: Props) {
 const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
+    backgroundColor: '#fff',
     paddingTop: 50,
     paddingHorizontal: 16,
   },

@@ -131,7 +131,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={styles.racine}>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
         <View style={styles.zoneContenu}>{contenu}</View>
         {afficherNav && <BarreNavigation onglet={onglet} onChanger={changerOnglet} />}
         <PopupGlobal />
@@ -244,6 +244,10 @@ function EcranConnexion({ onConnecte }: { onConnecte: (u: Utilisateur) => void }
 const styles = StyleSheet.create({
   racine: {
     flex: 1,
+    // Fond blanc force : l'app ne suit PAS le mode sombre du systeme (sinon les
+    // ecrans sans fond explicite -- Rapport, Parametre... -- devenaient noirs et
+    // le texte illisible sur les appareils en dark mode).
+    backgroundColor: '#fff',
   },
   zoneContenu: {
     flex: 1,
@@ -284,7 +288,7 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 16,
     marginBottom: 36,
-    backgroundColor: '#fff',
+    
     padding: 6,
   },
   loginChamp: {
