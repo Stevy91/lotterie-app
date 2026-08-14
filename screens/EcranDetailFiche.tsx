@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { obtenirNumeroSeriePosStocke, Utilisateur } from '../auth';
@@ -15,6 +16,8 @@ interface Props {
 }
 
 export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Props) {
+  // Marge basse : evite que le dernier bouton passe sous la barre de navigation.
+  const insets = useSafeAreaInsets();
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
   const [chargement, setChargement] = useState(true);
   const [enCours, setEnCours] = useState(false);
@@ -202,7 +205,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
         <View style={{ width: 22 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 + insets.bottom }}>
         <View style={styles.infos}>
           <View style={styles.ligneInfo}>
             <Text style={styles.labelInfo}>Ref code:</Text>

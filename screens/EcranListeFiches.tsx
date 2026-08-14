@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SelecteurDate from '../composants/SelecteurDate';
 import EcranDetailFiche from './EcranDetailFiche';
 import { alerteConfirmation, alerteSimple } from '../alerte';
@@ -49,6 +50,8 @@ function formaterDateHeure(iso: string): string {
 }
 
 export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, onRetour }: Props) {
+  // Marge basse : evite que la derniere ligne passe sous la barre de navigation.
+  const insets = useSafeAreaInsets();
   const [tickets, setTickets] = useState<TicketResponse[]>([]);
   const [chargement, setChargement] = useState(true);
   const [filtre, setFiltre] = useState(filtreInitial);
@@ -197,7 +200,7 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
       {chargement ? (
         <ActivityIndicator size="large" style={{ marginTop: 40 }} />
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}>
           {ticketsFiltres.length === 0 ? (
             <Text style={styles.vide}>aucun resultat..!</Text>
           ) : (

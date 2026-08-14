@@ -14,6 +14,7 @@ import {
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
@@ -86,6 +87,9 @@ function nettoyerMontant(texte: string): string {
 }
 
 export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
+  // Marge basse : sur les POS avec barre de navigation logicielle (Sunmi V2s),
+  // le dernier bouton du recu passait dessous et devenait inaccessible.
+  const insets = useSafeAreaInsets();
   const [tirages, setTirages] = useState<Tirage[]>([]);
   const [typesJeux, setTypesJeux] = useState<TypeJeu[]>([]);
   const [chargement, setChargement] = useState(true);
@@ -799,7 +803,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     const grandTotal = tickets.reduce((s, t) => s + Number(t.montant_total), 0);
 
     return (
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 24 + insets.bottom }]}>
         <Text style={styles.titreRecu}>{tickets.length > 1 ? `${tickets.length} tickets crees` : 'Ticket cree'}</Text>
 
         {tickets.map((t) => (
