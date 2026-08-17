@@ -702,30 +702,42 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     return parent ? `${parent} ${soi}` : soi;
   }
 
+  /**
+   * En-tete de fiche (logo, compagnie, POS, vendeur, adresses, telephones) :
+   * partagee par l'impression thermique ET le PDF, pour que les deux sortent
+   * exactement le meme document.
+   */
+  async function construireEntete(ts: TicketResponse[]) {
+    const config = await obtenirConfiguration();
+    const numeroSeriePos = (await obtenirNumeroSeriePosStocke()) ?? String(utilisateur.id);
+
+    return {
+      nomCompagnie: config.app_name ?? 'Lotterie',
+      // Une fiche brouillon (apercu, pas encore enregistree) n'a pas de
+      // ts[0].agent : on utilise alors directement l'utilisateur connecte,
+      // qui EST le vendeur pour toute fiche creee depuis cet ecran.
+      adresseAgent: ts[0].agent?.adresse ?? utilisateur.adresse,
+      adresseProprietaire: ts[0].agent?.proprietaire_adresse ?? utilisateur.proprietaire_adresse,
+      telephoneAgent: utilisateur.telephone,
+      telephoneProprietaire: utilisateur.proprietaire_telephone,
+      posId: numeroSeriePos,
+      vendeurNom: nomVendeur(ts[0]),
+      logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
+      texteFiche: config.text_fiche,
+    };
+  }
+
   async function imprimerFicheThermique(ts: TicketResponse[]) {
     if (ts.length === 0) return;
+    let entete;
     try {
-      const config = await obtenirConfiguration();
-      const numeroSeriePos = (await obtenirNumeroSeriePosStocke()) ?? String(utilisateur.id);
-      await imprimerFichesSunmi(ts, {
-        nomCompagnie: config.app_name ?? 'Lotterie',
-        // Une fiche brouillon (apercu, pas encore enregistree) n'a pas de
-        // ts[0].agent : on utilise alors directement l'utilisateur connecte,
-        // qui EST le vendeur pour toute fiche creee depuis cet ecran.
-        adresseAgent: ts[0].agent?.adresse ?? utilisateur.adresse,
-        adresseProprietaire: ts[0].agent?.proprietaire_adresse ?? utilisateur.proprietaire_adresse,
-        telephoneAgent: utilisateur.telephone,
-        telephoneProprietaire: utilisateur.proprietaire_telephone,
-        posId: numeroSeriePos,
-        vendeurNom: nomVendeur(ts[0]),
-        logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
-        texteFiche: config.text_fiche,
-      });
+      entete = await construireEntete(ts);
+      await imprimerFichesSunmi(ts, entete);
     } catch (e) {
       // Imprimante Sunmi indisponible (Expo Go, appareil sans imprimante...) :
       // repli sur le dialogue d'impression standard Android/iOS, une fiche a la fois.
       for (const t of ts) {
-        await Print.printAsync({ html: genererRecuHtml(t) });
+        await Print.printAsync({ html: genererRecuHtml(t, entete) });
       }
     }
   }
@@ -739,7 +751,16 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     if (tickets.length > 1) {
       alerteSimple('Plusieurs fiches', 'Le partage ne fonctionne que pour une fiche a la fois : partage de la premiere.');
     }
-    const { uri } = await Print.printToFileAsync({ html: genererRecuHtml(tickets[0]) });
+
+    // Le PDF partage reprend la meme entete que la fiche imprimee.
+    let entete;
+    try {
+      entete = await construireEntete(tickets);
+    } catch {
+      // Configuration indisponible : on partage la fiche sans l'entete complete.
+    }
+
+    const { uri } = await Print.printToFileAsync({ html: genererRecuHtml(tickets[0], entete) });
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(uri);
     }

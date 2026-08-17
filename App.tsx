@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { alerteSimple } from './alerte';
 import { appelApi, definirGestionnaireSuspension } from './api';
@@ -180,13 +180,51 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <View style={styles.racine}>
-        <StatusBar style="dark" />
-        <View style={styles.zoneContenu}>{contenu}</View>
-        {afficherNav && <BarreNavigation onglet={onglet} onChanger={changerOnglet} />}
-        <PopupGlobal />
-      </View>
+      <Racine
+        contenu={contenu}
+        afficherNav={afficherNav}
+        onglet={onglet}
+        onChangerOnglet={changerOnglet}
+        connecte={Boolean(utilisateur)}
+      />
     </SafeAreaProvider>
+  );
+}
+
+/**
+ * Coque de l'application.
+ *
+ * L'app dessine sous la barre d'etat (edge-to-edge). La camera du scanner y
+ * peint du noir, et ce noir restait visible apres avoir quitte l'onglet. On
+ * recouvre donc systematiquement cette bande d'un aplat blanc place au-dessus
+ * de tout : les ecrans reservent deja 50-60px de marge haute, rien n'est
+ * masque. L'ecran de connexion garde son fond plein ecran (bande non peinte).
+ */
+function Racine({
+  contenu,
+  afficherNav,
+  onglet,
+  onChangerOnglet,
+  connecte,
+}: {
+  contenu: React.ReactNode;
+  afficherNav: boolean;
+  onglet: Onglet;
+  onChangerOnglet: (o: Onglet) => void;
+  connecte: boolean;
+}) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={styles.racine}>
+      <StatusBar style="dark" />
+      <View style={styles.zoneContenu}>{contenu}</View>
+      {afficherNav && <BarreNavigation onglet={onglet} onChanger={onChangerOnglet} />}
+      {connecte && insets.top > 0 && (
+        <View pointerEvents="none" style={[styles.bandeStatut, { height: insets.top }]} />
+      )}
+      <PopupGlobal />
+    </View>
   );
 }
 
@@ -301,6 +339,14 @@ const styles = StyleSheet.create({
   },
   zoneContenu: {
     flex: 1,
+  },
+  // Aplat blanc sur la zone de la barre d'etat (voir Racine).
+  bandeStatut: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
   },
   centre: {
     flex: 1,
