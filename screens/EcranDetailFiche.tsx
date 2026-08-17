@@ -314,23 +314,27 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
           );
         })}
 
+        {/* Actions, dans le meme style de carte que la page Parametre. */}
         <View style={styles.boutons}>
-          {gagne && !ticket.paye && (
-            <TouchableOpacity style={[styles.bouton, { backgroundColor: '#16a34a' }]} onPress={confirmerPaiement} disabled={enCours}>
-              <Text style={styles.boutonTexte}>Payer</Text>
+          {([
+            ...(gagne && !ticket.paye ? [['Payer', 'cash', '#16a34a', confirmerPaiement] as const] : []),
+            ['Rejouer', 'refresh', '#2563eb', confirmerRejeu] as const,
+            ['Print fiche', 'print', '#e67e22', imprimer] as const,
+            ...(peutSupprimer ? [['Supprimer', 'trash', '#dc2626', confirmerSuppression] as const] : []),
+          ]).map(([libelle, icone, couleur, action]) => (
+            <TouchableOpacity
+              key={libelle}
+              style={[styles.carteAction, { backgroundColor: couleur }]}
+              onPress={action}
+              disabled={enCours}
+              activeOpacity={0.85}
+            >
+              <View style={styles.carteActionIcone}>
+                <Ionicons name={icone as any} size={20} color="#fff" />
+              </View>
+              <Text style={styles.carteActionTexte}>{libelle}</Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity style={[styles.bouton, { backgroundColor: '#2563eb' }]} onPress={confirmerRejeu} disabled={enCours}>
-            <Text style={styles.boutonTexte}>Rejouer</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.bouton, { backgroundColor: '#e67e22' }]} onPress={imprimer}>
-            <Text style={styles.boutonTexte}>Print fiche</Text>
-          </TouchableOpacity>
-          {peutSupprimer && (
-            <TouchableOpacity style={[styles.bouton, { backgroundColor: '#dc2626' }]} onPress={confirmerSuppression} disabled={enCours}>
-              <Text style={styles.boutonTexte}>Supprimer</Text>
-            </TouchableOpacity>
-          )}
+          ))}
         </View>
       </ScrollView>
 
@@ -389,6 +393,34 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
 }
 
 const styles = StyleSheet.create({
+  // Cartes d'action : meme langage visuel que les boutons de Parametre.
+  carteAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  carteActionIcone: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  carteActionTexte: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
   fondModal: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

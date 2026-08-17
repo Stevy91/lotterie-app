@@ -840,21 +840,27 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
           <Text style={[styles.totalRecu, { marginTop: 8 }]}>Grand Total: {grandTotal.toFixed(2)}</Text>
         )}
 
-        <TouchableOpacity style={styles.boutonPlein} onPress={imprimer}>
-          <Text style={styles.boutonPleinTexte}>Imprimer</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.boutonPlein} onPress={partager}>
-          <Text style={styles.boutonPleinTexte}>Partager</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.boutonPlein, styles.boutonSecondaire]} onPress={nouveauTicket}>
-          <Text style={styles.boutonPleinTexte}>Nouveau ticket</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.boutonPlein, styles.boutonSecondaire]} onPress={onRetour}>
-          <Text style={styles.boutonPleinTexte}>Retour a l'accueil</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.boutonPlein, styles.boutonSupprimer]} onPress={confirmerSuppressionTicket}>
-          <Text style={styles.boutonPleinTexte}>Supprimer</Text>
-        </TouchableOpacity>
+        {/* Actions du recu, dans le meme style de carte que la page Parametre :
+            icone dans un cercle translucide, texte blanc, coins arrondis, ombre. */}
+        {([
+          ['Imprimer', 'print', '#2563eb', imprimer],
+          ['Partager', 'share-social', '#0ea5e9', partager],
+          ['Nouveau ticket', 'add-circle', '#16a34a', nouveauTicket],
+          ["Retour a l'accueil", 'home', '#6b7280', onRetour],
+          ['Supprimer', 'trash', '#dc2626', confirmerSuppressionTicket],
+        ] as const).map(([libelle, icone, couleur, action]) => (
+          <TouchableOpacity
+            key={libelle}
+            style={[styles.carteAction, { backgroundColor: couleur }]}
+            onPress={action}
+            activeOpacity={0.85}
+          >
+            <View style={styles.carteActionIcone}>
+              <Ionicons name={icone as any} size={20} color="#fff" />
+            </View>
+            <Text style={styles.carteActionTexte}>{libelle}</Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     );
   }
@@ -1468,6 +1474,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'right',
     marginVertical: 12,
+  },
+  // Cartes d'action du recu : meme langage visuel que les boutons de Parametre.
+  carteAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  carteActionIcone: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  carteActionTexte: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
   },
   boutonPlein: {
     backgroundColor: '#2563eb',
