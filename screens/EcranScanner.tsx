@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, BackHandler, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +23,21 @@ export default function EcranScanner({ utilisateur }: Props) {
   const [saisieVisible, setSaisieVisible] = useState(false);
   const [numeroSaisi, setNumeroSaisi] = useState('');
   const [rechercheEnCours, setRechercheEnCours] = useState(false);
+
+  // Le detail d'une fiche scannee s'ouvre par-dessus la camera : le bouton
+  // retour du POS revient au scanner plutot que de quitter l'onglet.
+  useEffect(() => {
+    if (ticketId === null) return;
+
+    const abonnement = BackHandler.addEventListener('hardwareBackPress', () => {
+      setTicketId(null);
+      setScanEnCours(false);
+      setErreur(null);
+      return true;
+    });
+
+    return () => abonnement.remove();
+  }, [ticketId]);
 
   async function ouvrirParNumero() {
     const numero = numeroSaisi.trim();

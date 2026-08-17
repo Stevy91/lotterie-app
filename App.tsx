@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, BackHandler, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
@@ -25,6 +25,50 @@ export default function App() {
   const [utilisateur, setUtilisateur] = useState<Utilisateur | null>(null);
   const [onglet, setOnglet] = useState<Onglet>('fiche');
   const [ecran, setEcran] = useState<'accueil' | Destination>('accueil');
+
+  // Pile de navigation : permet au bouton retour du POS de revenir a l'ecran
+  // precedent au lieu de fermer l'application. Un ref (et non un state) pour que
+  // le gestionnaire du bouton lise toujours la pile a jour.
+  const historique = useRef<{ onglet: Onglet; ecran: 'accueil' | Destination }[]>([]);
+
+  /** Empile la position courante puis navigue vers la nouvelle. */
+  function naviguer(suivant: { onglet?: Onglet; ecran?: 'accueil' | Destination }) {
+    historique.current.push({ onglet, ecran });
+    if (suivant.onglet !== undefined) setOnglet(suivant.onglet);
+    if (suivant.ecran !== undefined) setEcran(suivant.ecran);
+  }
+
+  /** Revient a l'ecran precedent. Retourne false si la pile est vide. */
+  function retourArriere(): boolean {
+    const precedent = historique.current.pop();
+    if (!precedent) return false;
+
+    setOnglet(precedent.onglet);
+    setEcran(precedent.ecran);
+    return true;
+  }
+
+  /** Fleche retour d'un ecran : recule d'un cran, ou retombe sur l'accueil. */
+  function retournerOuAccueil() {
+    if (retourArriere()) return;
+
+    setOnglet('fiche');
+    setEcran('accueil');
+  }
+
+  // Bouton retour materiel / barre de navigation Android.
+  useEffect(() => {
+    const abonnement = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Sur l'ecran de connexion, on laisse Android fermer l'app.
+      if (!utilisateur) return false;
+
+      // true = evenement consomme (on reste dans l'app) ;
+      // false = pile vide, on est a la racine -> Android ferme l'app.
+      return retourArriere();
+    });
+
+    return () => abonnement.remove();
+  }, [utilisateur]);
 
   useEffect(() => {
     recupererSession()
@@ -71,13 +115,13 @@ export default function App() {
     setUtilisateur(null);
     setOnglet('fiche');
     setEcran('accueil');
+    historique.current = [];
   }
 
   function changerOnglet(nouvelOnglet: Onglet) {
-    setOnglet(nouvelOnglet);
-    if (nouvelOnglet === 'fiche') {
-      setEcran('accueil');
-    }
+    if (nouvelOnglet === onglet) return;
+
+    naviguer(nouvelOnglet === 'fiche' ? { onglet: 'fiche', ecran: 'accueil' } : { onglet: nouvelOnglet });
   }
 
   const titresParDestination: Record<Exclude<Destination, 'creer'>, string> = {
@@ -104,7 +148,7 @@ export default function App() {
   } else if (!utilisateur) {
     contenu = <EcranConnexion onConnecte={setUtilisateur} />;
   } else if (onglet === 'rapport') {
-    contenu = <EcranRapport utilisateur={utilisateur} onRetour={() => changerOnglet('fiche')} />;
+    contenu = <EcranRapport utilisateur={utilisateur} onRetour={retournerOuAccueil} />;
     afficherNav = true;
   } else if (onglet === 'scanner') {
     contenu = <EcranScanner utilisateur={utilisateur} />;
@@ -113,17 +157,23 @@ export default function App() {
     contenu = <EcranParametre utilisateur={utilisateur} onDeconnecter={seDeconnecter} />;
     afficherNav = true;
   } else if (ecran === 'accueil') {
-    contenu = <EcranAccueil utilisateur={utilisateur} onNaviguer={setEcran} onDeconnecter={seDeconnecter} />;
+    contenu = (
+      <EcranAccueil
+        utilisateur={utilisateur}
+        onNaviguer={(destination) => naviguer({ ecran: destination })}
+        onDeconnecter={seDeconnecter}
+      />
+    );
     afficherNav = true;
   } else if (ecran === 'creer') {
-    contenu = <EcranCreerFiche utilisateur={utilisateur} onRetour={() => setEcran('accueil')} />;
+    contenu = <EcranCreerFiche utilisateur={utilisateur} onRetour={retournerOuAccueil} />;
   } else {
     contenu = (
       <EcranListeFiches
         titre={titresParDestination[ecran]}
         filtre={filtreParDestination[ecran]}
         utilisateur={utilisateur}
-        onRetour={() => setEcran('accueil')}
+        onRetour={retournerOuAccueil}
       />
     );
   }

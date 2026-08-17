@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  BackHandler,
   ScrollView,
   StyleSheet,
   Text,
@@ -59,6 +60,21 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
   const [dateFin, setDateFin] = useState(new Date());
   const [rechercheTexte, setRechercheTexte] = useState('');
   const [ticketSelectionne, setTicketSelectionne] = useState<number | null>(null);
+
+  // Le detail d'une fiche s'ouvre PAR-DESSUS la liste : le bouton retour du POS
+  // doit d'abord le refermer, sans quitter la liste. Ce gestionnaire est
+  // enregistre apres celui de App.tsx, il est donc appele en premier.
+  useEffect(() => {
+    if (ticketSelectionne === null) return;
+
+    const abonnement = BackHandler.addEventListener('hardwareBackPress', () => {
+      setTicketSelectionne(null);
+      charger();
+      return true;
+    });
+
+    return () => abonnement.remove();
+  }, [ticketSelectionne]);
 
   useEffect(() => {
     charger();
