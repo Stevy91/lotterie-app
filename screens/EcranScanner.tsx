@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
 import { appelApi } from '../api';
@@ -96,6 +97,9 @@ export default function EcranScanner({ utilisateur }: Props) {
 
   return (
     <View style={styles.conteneur}>
+      {/* Icones claires sur le fond noir de la camera. En quittant l'ecran, ce
+          composant est demonte et expo-status-bar restaure le style de l'app. */}
+      <StatusBar style="light" />
       <CameraView
         style={StyleSheet.absoluteFill}
         facing="back"

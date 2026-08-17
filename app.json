@@ -7,6 +7,7 @@
     "icon": "./assets/icone-app.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
+    "backgroundColor": "#ffffff",
     "splash": {
       "image": "./assets/icone-adaptive.png",
       "resizeMode": "contain",
@@ -20,6 +21,7 @@
         "foregroundImage": "./assets/icone-adaptive.png",
         "backgroundColor": "#ffffff"
       },
+      "backgroundColor": "#ffffff",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
