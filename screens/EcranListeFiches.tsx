@@ -315,6 +315,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
+    // Couleur explicite : sinon blanche en mode sombre, sur ce fond clair.
+    color: '#111827',
   },
   ligneEnteteTableau: {
     flexDirection: 'row',

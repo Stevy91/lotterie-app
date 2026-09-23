@@ -309,6 +309,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     fontSize: 15,
+    // Couleur explicite : sinon blanche en mode sombre, sur ce fond clair.
+    color: '#111827',
   },
   boutonsSaisie: {
     flexDirection: 'row',

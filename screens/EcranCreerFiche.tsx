@@ -1430,6 +1430,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     fontSize: 15,
+    // Sans couleur explicite, le texte saisi prend celle du systeme : blanc sur
+    // un telephone en mode sombre, donc invisible sur ce fond clair.
+    color: '#111827',
   },
   checkboxChamp: {
     position: 'absolute',
