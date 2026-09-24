@@ -188,6 +188,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#111827',
   },
   previewLogo: {
     marginTop: 16,
@@ -245,6 +246,7 @@ const styles = StyleSheet.create({
   },
   valeurInfo: {
     fontWeight: '400',
+    color: '#333',
   },
   valeurMariage: {
     fontWeight: '700',

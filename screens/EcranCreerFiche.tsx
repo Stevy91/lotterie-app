@@ -1363,6 +1363,9 @@ const styles = StyleSheet.create({
   },
   ligneJoueeNumero: {
     fontWeight: '700',
+    // Couleur explicite : sinon blanche en mode sombre, donc le numero joue
+    // disparait sur le fond clair de la liste.
+    color: '#111827',
   },
   badgeOption: {
     width: 16,
@@ -1379,6 +1382,7 @@ const styles = StyleSheet.create({
   },
   ligneJoueeMontant: {
     fontWeight: '600',
+    color: '#111827',
   },
   resume: {
     flexDirection: 'row',
