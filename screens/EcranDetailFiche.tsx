@@ -231,7 +231,12 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
   const gagne = ticket.statut === 'gagnant' || ticket.statut === 'partiellement_gagnant';
   const loterieNom = ticket.mises[0]?.tirage.loterie.nom ?? '-';
   const minutesEcoulees = (Date.now() - new Date(ticket.created_at).getTime()) / 60000;
-  const peutSupprimer = ticket.statut === 'en_attente' && minutesEcoulees <= dureeSuppressionMinutes;
+  // Le delai ne borne que le vendeur. Un proprietaire ou un superviseur peut
+  // encore supprimer apres coup : c'est a eux que le point de vente s'adresse
+  // quand le delai est passe. Le serveur applique la meme regle.
+  const estResponsable = utilisateur.role === 'proprietaire' || utilisateur.role === 'agent';
+  const peutSupprimer =
+    ticket.statut === 'en_attente' && (estResponsable || minutesEcoulees <= dureeSuppressionMinutes);
 
   // Total du rejeu : les memes boules sont jouees sur chaque zone cochee.
   const totalRejeu = modeleDeMises().reduce((s, m) => s + m.montant, 0) * zonesChoisies.length;
