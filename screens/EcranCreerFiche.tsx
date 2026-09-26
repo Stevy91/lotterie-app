@@ -267,16 +267,24 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
 
     // Aucun type de jeu selectionne : on detecte automatiquement le jeu loto qui
     // correspond au nombre de chiffres saisis (2=simple, 3 a 7=Lo3...Lo7).
-    if (numeroSaisi.length < 2 || numeroSaisi.length > 7) {
-      alerteSimple('Numero invalide', 'Entre entre 2 et 7 chiffres.');
-      return;
-    }
     // L3-L7 Auto ont aussi un generation_auto (bouton "boules identiques"), donc on ne
     // filtre plus dessus ici : sinon la detection par nombre de chiffres les ignore et
     // retombe a tort sur BPaire pour un numero de 3+ chiffres.
-    const typeJeu = typesJeux.find((t) => t.nombre_chiffres === numeroSaisi.length && !t.est_combinaison) ?? typesJeux[0];
+    const typeJeu = typesJeux.find((t) => t.nombre_chiffres === numeroSaisi.length && !t.est_combinaison);
+
+    // PAS de repli sur typesJeux[0] : il enregistrait la mise sous un jeu qui
+    // n'a rien a voir avec le nombre de chiffres tapes (6 chiffres vendus en
+    // BPaire, par exemple). Mieux vaut refuser et dire ce qui est jouable.
     if (!typeJeu) {
-      alerteSimple('Aucun type de jeu', 'Aucun type de jeu n\'est configure dans le systeme.');
+      const taillesJouables = [...new Set(typesJeux.filter((t) => !t.est_combinaison).map((t) => t.nombre_chiffres))]
+        .sort((a, b) => a - b);
+
+      alerteSimple(
+        'Numero invalide',
+        taillesJouables.length
+          ? `Aucun jeu ne correspond a ${numeroSaisi.length} chiffres. Jeux disponibles : ${taillesJouables.join(', ')} chiffres.`
+          : "Aucun type de jeu n'est configure dans le systeme."
+      );
       return;
     }
     ajouterOuFusionnerLignes(typeJeu, [{ numero: numeroSaisi, numero2: undefined }], montantNombre, optionCombinaison);
