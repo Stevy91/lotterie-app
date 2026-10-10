@@ -667,7 +667,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
 
       setTickets(resultats);
     } catch (e: any) {
-      alerteSimple('Erreur', e.message ?? 'Impossible de creer le ticket.');
+      alerteSimple('Attention', e.message ?? 'Impossible de creer le ticket.');
     } finally {
       setEnvoiEnCours(false);
     }
@@ -700,7 +700,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       setTickets([]);
       setLignes([]);
     } catch (e: any) {
-      alerteSimple('Erreur', e.message ?? "Impossible de supprimer cette fiche.");
+      alerteSimple('Attention', e.message ?? "Impossible de supprimer cette fiche.");
     }
   }
 

@@ -25,7 +25,7 @@ export default function EcranTirageDisponible({ onRetour }: Props) {
       const data: Loterie[] = await reponse.json();
       setLoteries(data);
     } catch (e) {
-      alerteSimple('Erreur', 'Impossible de charger les tirages disponibles.');
+      alerteSimple('Attention', 'Impossible de charger les tirages disponibles.');
     } finally {
       setChargement(false);
     }

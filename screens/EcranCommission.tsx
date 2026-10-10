@@ -42,7 +42,7 @@ export default function EcranCommission({ utilisateur, onRetour }: Props) {
       const data: DonneesCommission = await reponse.json();
       setDonnees(data);
     } catch (e) {
-      alerteSimple('Erreur', 'Impossible de charger la commission.');
+      alerteSimple('Attention', 'Impossible de charger la commission.');
     } finally {
       setChargement(false);
     }

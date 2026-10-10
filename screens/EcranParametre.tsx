@@ -75,7 +75,7 @@ export default function EcranParametre({ utilisateur, onDeconnecter }: Props) {
       const data = await reponse.json();
       setLogoUrl(data.logo_url);
     } catch (e: any) {
-      alerteSimple('Erreur', e.message ?? 'Impossible de televerser le logo.');
+      alerteSimple('Attention', e.message ?? 'Impossible de televerser le logo.');
     } finally {
       setTeleversementEnCours(false);
     }

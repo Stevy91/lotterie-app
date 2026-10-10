@@ -47,7 +47,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
       const data: TicketResponse = await reponse.json();
       setTicket(data);
     } catch (e) {
-      alerteSimple('Erreur', 'Impossible de charger la fiche.');
+      alerteSimple('Attention', 'Impossible de charger la fiche.');
     } finally {
       setChargement(false);
     }
@@ -75,7 +75,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
       const miseAJour: TicketResponse = await reponse.json();
       setTicket(miseAJour);
     } catch (e: any) {
-      alerteSimple('Erreur', e.message ?? 'Impossible de payer cette fiche.');
+      alerteSimple('Attention', e.message ?? 'Impossible de payer cette fiche.');
     } finally {
       setEnCours(false);
     }
@@ -127,7 +127,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
       setZonesChoisies(preCochees);
       setModalRejeu(true);
     } catch (e: any) {
-      alerteSimple('Erreur', e.message ?? 'Impossible de charger les zones.');
+      alerteSimple('Attention', e.message ?? 'Impossible de charger les zones.');
     } finally {
       setEnCours(false);
     }
@@ -165,7 +165,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
       const nouveauTicket: TicketResponse = await reponseCreation.json();
       alerteSimple('Fiche rejouee', `Nouvelle fiche creee : ${nouveauTicket.numero_ticket}`);
     } catch (e: any) {
-      alerteSimple('Erreur', e.message ?? 'Impossible de rejouer cette fiche.');
+      alerteSimple('Attention', e.message ?? 'Impossible de rejouer cette fiche.');
     } finally {
       setEnCours(false);
     }
@@ -214,7 +214,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
       }
       onRetour();
     } catch (e: any) {
-      alerteSimple('Erreur', e.message ?? 'Impossible de supprimer cette fiche.');
+      alerteSimple('Attention', e.message ?? 'Impossible de supprimer cette fiche.');
     } finally {
       setEnCours(false);
     }

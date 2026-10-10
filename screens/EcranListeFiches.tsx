@@ -92,7 +92,7 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
       const data: TicketResponse[] = await reponse.json();
       setTickets(data);
     } catch (e) {
-      alerteSimple('Erreur', 'Impossible de charger les fiches.');
+      alerteSimple('Attention', 'Impossible de charger les fiches.');
     } finally {
       setChargement(false);
     }
@@ -115,7 +115,7 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
       }
       setTickets((prev) => prev.filter((t) => t.id !== ticket.id));
     } catch (e: any) {
-      alerteSimple('Erreur', e.message ?? "Impossible d'annuler cette fiche.");
+      alerteSimple('Attention', e.message ?? "Impossible d'annuler cette fiche.");
     }
   }
 

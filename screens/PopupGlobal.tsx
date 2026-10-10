@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#222',
     marginBottom: 8,
+    textAlign: 'center',
   },
   message: {
     fontSize: 14,

@@ -142,7 +142,7 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
       const data: RapportFinTirage = await reponse.json();
       setRapport(data);
     } catch (e) {
-      alerteSimple('Erreur', 'Impossible de charger le rapport.');
+      alerteSimple('Attention', 'Impossible de charger le rapport.');
     } finally {
       setChargement(false);
     }
@@ -164,7 +164,7 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
       const data: RapportFicheGagnant = await reponse.json();
       setRapportGagnant(data);
     } catch (e) {
-      alerteSimple('Erreur', 'Impossible de charger le rapport.');
+      alerteSimple('Attention', 'Impossible de charger le rapport.');
     } finally {
       setChargement(false);
     }
@@ -218,7 +218,7 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
       const data: RapportFinTirage = await reponse.json();
       setRapport(data);
     } catch (e) {
-      alerteSimple('Erreur', 'Impossible de charger le rapport.');
+      alerteSimple('Attention', 'Impossible de charger le rapport.');
     } finally {
       setChargement(false);
     }

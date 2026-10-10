@@ -57,7 +57,7 @@ export default function EcranNumeroGagnant({ onRetour }: Props) {
       const data: Tirage[] = await reponse.json();
       setTirages(data);
     } catch (e) {
-      alerteSimple('Erreur', 'Impossible de charger les numeros gagnants.');
+      alerteSimple('Attention', 'Impossible de charger les numeros gagnants.');
     } finally {
       setChargement(false);
     }

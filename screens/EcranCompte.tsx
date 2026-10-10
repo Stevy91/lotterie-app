@@ -60,7 +60,7 @@ export default function EcranCompte({ utilisateur, onRetour }: Props) {
       const data: DonneesCompte = await reponse.json();
       setDonnees(data);
     } catch (e) {
-      alerteSimple('Erreur', 'Impossible de charger les transactions.');
+      alerteSimple('Attention', 'Impossible de charger les transactions.');
     } finally {
       setChargement(false);
     }
