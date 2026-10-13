@@ -432,12 +432,21 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     }
 
     const mode = typeJeuSelectionne.generation_auto;
+    // Taille des boules que ce jeu sait combiner / inverser (2 pour un mariage).
+    // Les lignes deja jouees d'une AUTRE taille (Lo3, Lo4, Lo5...) ne sont pas
+    // des operandes valides : sans ce filtre, deux Lo4 donnaient un « mariage »
+    // 1234 x 4576, qui n'a aucun sens et ne peut jamais sortir.
+    const nombreChiffres = typeJeuSelectionne.nombre_chiffres;
 
     if (mode === 'marriage') {
       // Combine 2 par 2 les numeros simples deja joues dans chaque zone selectionnee.
       const nouvellesLignes: Ligne[] = tirageSelectionnes.flatMap((tirage) => {
         const numerosZone = Array.from(
-          new Set(lignes.filter((l) => l.tirage.id === tirage.id && !l.numero2).map((l) => l.numero))
+          new Set(
+            lignes
+              .filter((l) => l.tirage.id === tirage.id && !l.numero2 && l.numero.length === nombreChiffres)
+              .map((l) => l.numero)
+          )
         );
 
         const paires: Ligne[] = [];
@@ -457,7 +466,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       });
 
       if (nouvellesLignes.length === 0) {
-        alerteSimple('Pas assez de numeros', 'Joue au moins 2 numeros simples dans une zone avant de generer les Marriage.');
+        alerteSimple('Pas assez de numeros', `Joue au moins 2 boules de ${nombreChiffres} chiffres dans une zone avant de generer les Marriage.`);
         return;
       }
 
@@ -470,7 +479,11 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       // Genere le numero inverse de chaque boule simple deja jouee dans chaque zone selectionnee.
       const nouvellesLignes: Ligne[] = tirageSelectionnes.flatMap((tirage) => {
         const numerosZone = Array.from(
-          new Set(lignes.filter((l) => l.tirage.id === tirage.id && !l.numero2).map((l) => l.numero))
+          new Set(
+            lignes
+              .filter((l) => l.tirage.id === tirage.id && !l.numero2 && l.numero.length === nombreChiffres)
+              .map((l) => l.numero)
+          )
         );
 
         const inverses: Ligne[] = [];
@@ -490,7 +503,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       });
 
       if (nouvellesLignes.length === 0) {
-        alerteSimple('Aucun reverse possible', 'Joue au moins un numero simple non palindrome dans une zone avant de generer les Reverse.');
+        alerteSimple('Aucun reverse possible', `Joue au moins une boule de ${nombreChiffres} chiffres non palindrome dans une zone avant de generer les Reverse.`);
         return;
       }
 
@@ -499,7 +512,6 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       return;
     }
 
-    const nombreChiffres = typeJeuSelectionne.nombre_chiffres;
     const finParChiffre = mode?.match(/^p(\d)$/);
 
     const numeros: string[] = [];
