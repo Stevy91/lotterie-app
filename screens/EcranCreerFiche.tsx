@@ -278,8 +278,11 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
 
     // 4 chiffres sans case cochee : c'est un mariage, les deux moities forment
     // la paire (1234 -> 12 x 34, 3456 -> 34 x 56). Le Lotto 4 reste jouable en
-    // selectionnant son bouton, ou avec la case cochee pour avoir l'inverse.
-    if (numeroSaisi.length === 4) {
+    // selectionnant son bouton, avec la case cochee pour avoir l'inverse, ou
+    // en tapant le suffixe d'option (« 1234.1 ») : ce suffixe n'a de sens que
+    // pour un Lotto, donc il ecarte le mariage et laisse la detection par
+    // nombre de chiffres faire son travail plus bas.
+    if (numeroSaisi.length === 4 && optionCombinaison === undefined) {
       // Le mariage saisi a la main, pas « MA Auto » (qui genere lui-meme ses
       // combinaisons) : meme definition qu'a la validation stricte plus haut.
       const typeMarriage = typesJeux.find((t) => t.est_combinaison && !t.generation_auto)
