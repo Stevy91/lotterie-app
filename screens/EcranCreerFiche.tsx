@@ -783,16 +783,37 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
 
   async function imprimerFicheThermique(ts: TicketResponse[]) {
     if (ts.length === 0) return;
-    let entete;
+
+    const entete = await construireEntete(ts);
+    let raisonImprimante: string | null = null;
+
     try {
-      entete = await construireEntete(ts);
       await imprimerFichesSunmi(ts, entete);
-    } catch (e) {
-      // Imprimante Sunmi indisponible (Expo Go, appareil sans imprimante...) :
-      // repli sur le dialogue d'impression standard Android/iOS, une fiche a la fois.
+      return;
+    } catch (e: any) {
+      // On GARDE la raison : avalee, elle laissait le vendeur devant une
+      // impression qui ne fait rien, sans le moindre message. C'est ce qui
+      // empechait de savoir pourquoi un terminal n'imprimait pas.
+      raisonImprimante = e?.message ?? 'cause inconnue';
+    }
+
+    // Repli sur le dialogue d'impression Android/iOS : utile sur un telephone
+    // sans imprimante integree.
+    try {
       for (const t of ts) {
         await Print.printAsync({ html: genererRecuHtml(t, entete) });
       }
+    } catch (e: any) {
+      // Annulation volontaire du dialogue : rien a signaler.
+      const message = String(e?.message ?? '');
+      if (/cancel|did not complete|dismiss/i.test(message)) return;
+
+      alerteSimple(
+        'Impression impossible',
+        `L'imprimante du terminal n'a pas repondu : ${raisonImprimante}\n\n`
+          + "Aucune imprimante systeme n'est disponible non plus. La fiche est bien enregistree : "
+          + 'tu peux la reimprimer depuis « Fiches vendues ».'
+      );
     }
   }
 
