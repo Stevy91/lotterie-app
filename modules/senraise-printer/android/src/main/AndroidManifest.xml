@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!--
+    Depuis Android 11, une application ne voit pas les autres paquets installes
+    sauf a les declarer ici. Sans ce bloc, getPackageInfo() leve
+    NameNotFoundException et bindService() echoue en silence sur le H10S
+    (Android 13) : la detection conclurait a tort que le terminal n'est pas
+    un SENRAISE.
+  -->
+  <queries>
+    <package android:name="recieptservice.com.recieptservice" />
+  </queries>
+
+</manifest>

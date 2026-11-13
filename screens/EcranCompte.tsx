@@ -100,7 +100,7 @@ export default function EcranCompte({ utilisateur, onRetour }: Props) {
         }
       );
     } catch (e: any) {
-      alerteSimple('Impression impossible', e.message ?? "L'imprimante Sunmi n'est pas disponible sur cet appareil.");
+      alerteSimple('Impression impossible', e.message ?? "L'imprimante du terminal n'est pas disponible.");
     }
   }
 

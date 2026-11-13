@@ -194,7 +194,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
         texteFiche: config.text_fiche,
       });
     } catch (e: any) {
-      alerteSimple('Impression impossible', e.message ?? "L'imprimante Sunmi n'est pas disponible sur cet appareil.");
+      alerteSimple('Impression impossible', e.message ?? "L'imprimante du terminal n'est pas disponible.");
     }
   }
 

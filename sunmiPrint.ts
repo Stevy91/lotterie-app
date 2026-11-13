@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as SunmiPrinterLibrary from '@mitsuharu/react-native-sunmi-printer-library';
+import { obtenirPilote, Pilote } from './pilotes/pilote';
 import * as Application from 'expo-application';
 import * as ImageManipulator from 'expo-image-manipulator';
 
@@ -99,22 +99,29 @@ async function logoEnDataUri(logoUrl: string): Promise<string | null> {
   }
 }
 
+/**
+ * Imprimante du terminal courant. Renseignee par verifierImprimante(), que
+ * chaque fonction d'impression appelle en premier : toute la mise en page
+ * ci-dessous passe par elle sans savoir de quelle marque il s'agit.
+ */
+let imprimante: Pilote;
+
 async function verifierImprimante(): Promise<void> {
   if (Platform.OS !== 'android') {
-    throw new Error("L'impression sur l'imprimante Sunmi n'est disponible que sur Android.");
+    throw new Error("L'impression n'est disponible que sur Android.");
   }
 
-  let pret: boolean;
   try {
-    pret = await SunmiPrinterLibrary.prepare();
+    imprimante = await obtenirPilote();
+    await imprimante.prepare();
+    // Ouvre le bloc d'impression, referme par imprimerPied(). Sur SENRAISE le
+    // service accumule puis envoie d'un coup : sans cet encadrement, une fiche
+    // longue sort en morceaux separes par des blancs. Sur Sunmi, sans effet.
+    await imprimante.debuter();
   } catch (e: any) {
     // On remonte le detail brut de l'erreur native : le message par defaut
     // masquait la vraie cause quand l'erreur native n'a pas de .message.
     throw new Error(`prepare() a echoue: ${e?.message || e?.code || JSON.stringify(e) || 'erreur inconnue'}`);
-  }
-
-  if (!pret) {
-    throw new Error('Aucune imprimante Sunmi detectee sur cet appareil (prepare a retourne false).');
   }
 }
 
@@ -132,9 +139,9 @@ export async function obtenirNumeroSeriePos(): Promise<string | null> {
   }
 
   try {
-    const { serialNumber } = await SunmiPrinterLibrary.getPrinterInfo();
-    if (serialNumber) {
-      return serialNumber;
+    const serie = await (await obtenirPilote()).numeroSerie();
+    if (serie) {
+      return serie;
     }
   } catch {
     // Pas un Sunmi ou service imprimante indisponible : on tente le repli ci-dessous.
@@ -155,22 +162,22 @@ async function imprimerEntete(entete: EnteteRecu, titre: string, dateCreation?: 
   if (entete.logoUrl) {
     const dataUri = await logoEnDataUri(entete.logoUrl);
     if (dataUri) {
-      await SunmiPrinterLibrary.setAlignment('center');
-      await SunmiPrinterLibrary.printImage(dataUri, LARGEUR_LOGO_PIXELS, 'grayscale');
-      await SunmiPrinterLibrary.lineWrap(1);
+      await imprimante.setAlignment('center');
+      await imprimante.printImage(dataUri, LARGEUR_LOGO_PIXELS);
+      await imprimante.lineWrap(1);
     }
   }
 
-  await SunmiPrinterLibrary.setAlignment('center');
-  await SunmiPrinterLibrary.setTextStyle('bold', true);
-  await SunmiPrinterLibrary.printText(`${titre}\n`);
-  await SunmiPrinterLibrary.setFontSize(32);
-  await SunmiPrinterLibrary.printText(`${entete.nomCompagnie}\n`);
-  await SunmiPrinterLibrary.setDefaultFontSize();
-  await SunmiPrinterLibrary.setTextStyle('bold', false);
-  await SunmiPrinterLibrary.lineWrap(1);
+  await imprimante.setAlignment('center');
+  await imprimante.setTextStyle('bold', true);
+  await imprimante.printText(`${titre}\n`);
+  await imprimante.setFontSize(32);
+  await imprimante.printText(`${entete.nomCompagnie}\n`);
+  await imprimante.setDefaultFontSize();
+  await imprimante.setTextStyle('bold', false);
+  await imprimante.lineWrap(1);
 
-  await SunmiPrinterLibrary.setAlignment('center');
+  await imprimante.setAlignment('center');
   // Un seul appel pour les 5 lignes : des appels printText() separes
   // inserent un espace parasite entre chaque ligne sur le Sunmi.
   const telAgent = formaterTelephone(entete.telephoneAgent);
@@ -179,7 +186,7 @@ async function imprimerEntete(entete: EnteteRecu, titre: string, dateCreation?: 
     ? `Tel: ${telAgent || '-'} / ${telProprietaire || '-'}\n`
     : '';
 
-  await SunmiPrinterLibrary.printText(
+  await imprimante.printText(
     `POS: ${entete.posId}\n` +
       `Vendeur: ${entete.vendeurNom}\n` +
       `Addresse : ${entete.adresseAgent || '-'}\n` +
@@ -187,22 +194,26 @@ async function imprimerEntete(entete: EnteteRecu, titre: string, dateCreation?: 
       ligneTel +
       `Date: ${formaterDate(dateCreation ?? new Date())}\n`
   );
-  await SunmiPrinterLibrary.printText(SEPARATEUR);
+  await imprimante.printText(SEPARATEUR);
 }
 
 async function imprimerPied(texteFiche?: string | null): Promise<void> {
   if (texteFiche) {
-    await SunmiPrinterLibrary.setAlignment('center');
-    await SunmiPrinterLibrary.printText(`${texteFiche}\n`);
+    await imprimante.setAlignment('center');
+    await imprimante.printText(`${texteFiche}\n`);
   }
-  await SunmiPrinterLibrary.setAlignment('left');
-  await SunmiPrinterLibrary.printText(`Impression: ${formaterDate(new Date())}\n`);
-  await SunmiPrinterLibrary.lineWrap(3);
+  await imprimante.setAlignment('left');
+  await imprimante.printText(`Impression: ${formaterDate(new Date())}\n`);
+  await imprimante.lineWrap(3);
   try {
-    await SunmiPrinterLibrary.cutPaper();
+    await imprimante.cutPaper();
   } catch {
     // Le Sunmi V2 (portable) n'a pas de massicot -- disponible seulement sur les modeles de bureau.
   }
+
+  // Referme le bloc ouvert par verifierImprimante() : c'est CET appel qui
+  // declenche reellement l'impression sur SENRAISE.
+  await imprimante.terminer();
 }
 
 /**
@@ -222,10 +233,10 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
 
   for (const ticket of tickets) {
     const zoneNom = ticket.mises[0]?.tirage.loterie.nom ?? '';
-    await SunmiPrinterLibrary.setAlignment('center');
+    await imprimante.setAlignment('center');
     // Un seul appel (numero de ticket + zone) pour eviter tout espace
     // parasite entre les deux lignes.
-    await SunmiPrinterLibrary.printText(`#ticket: ${ticket.numero_ticket}\n${zoneNom}\n`);
+    await imprimante.printText(`#ticket: ${ticket.numero_ticket}\n${zoneNom}\n`);
 
     // On separe les boules jouees des mariages gratuits « bonus » (generes
     // automatiquement) : ces derniers s'affichent en bas de la zone, sous un titre.
@@ -243,62 +254,62 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
 
       // Somme des largeurs <= 31 : a 32 pile, le dernier caractere ("G" de
       // "HTG") deborde sur une ligne a part.
-      await SunmiPrinterLibrary.printColumnsText(
+      await imprimante.printColumnsText(
         [abrev, numero, `=> ${montantTexte}`],
         [4, 11, 15],
         ['left', 'left', 'right']
       );
     };
 
-    await SunmiPrinterLibrary.setAlignment('left');
+    await imprimante.setAlignment('left');
     for (const mise of misesJouees) {
       await imprimerLigneMise(mise);
     }
 
     if (mariagesBonus.length > 0) {
-      await SunmiPrinterLibrary.setAlignment('center');
-      await SunmiPrinterLibrary.setTextStyle('bold', true);
-      await SunmiPrinterLibrary.printText('--- Mariage Gratuit ---\n');
-      await SunmiPrinterLibrary.setTextStyle('bold', false);
-      await SunmiPrinterLibrary.setAlignment('left');
+      await imprimante.setAlignment('center');
+      await imprimante.setTextStyle('bold', true);
+      await imprimante.printText('--- Mariage Gratuit ---\n');
+      await imprimante.setTextStyle('bold', false);
+      await imprimante.setAlignment('left');
       for (const mise of mariagesBonus) {
         await imprimerLigneMise(mise);
       }
     }
 
-    await SunmiPrinterLibrary.printText(SEPARATEUR);
-    await SunmiPrinterLibrary.setTextStyle('bold', true);
-    await SunmiPrinterLibrary.printColumnsText(
+    await imprimante.printText(SEPARATEUR);
+    await imprimante.setTextStyle('bold', true);
+    await imprimante.printColumnsText(
       ['Total =>', `${Number(ticket.montant_total).toFixed(2)} HTG`],
       [14, 13],
       ['left', 'right']
     );
-    await SunmiPrinterLibrary.setTextStyle('bold', false);
-    await SunmiPrinterLibrary.printText(SEPARATEUR);
+    await imprimante.setTextStyle('bold', false);
+    await imprimante.printText(SEPARATEUR);
 
     grandTotal += Number(ticket.montant_total);
   }
 
   if (tickets.length > 1) {
-    await SunmiPrinterLibrary.setTextStyle('bold', true);
-    await SunmiPrinterLibrary.printColumnsText(
+    await imprimante.setTextStyle('bold', true);
+    await imprimante.printColumnsText(
       ['Grand Total =>', `${grandTotal.toFixed(2)} HTG`],
       [14, 13],
       ['left', 'right']
     );
-    await SunmiPrinterLibrary.setTextStyle('bold', false);
-    await SunmiPrinterLibrary.printText(SEPARATEUR);
+    await imprimante.setTextStyle('bold', false);
+    await imprimante.printText(SEPARATEUR);
   }
 
   // QR code de chaque fiche, en bas, au-dessus du texte configure : scanner
   // ce QR dans l'app ouvre directement le detail de la fiche (voir EcranScanner).
   for (const ticket of tickets) {
-    await SunmiPrinterLibrary.setAlignment('center');
-    await SunmiPrinterLibrary.printText(`${ticket.numero_ticket}\n`);
+    await imprimante.setAlignment('center');
+    await imprimante.printText(`${ticket.numero_ticket}\n`);
     try {
       // Module 10 : QR plus grand et plus facile a scanner sur papier thermique.
-      await SunmiPrinterLibrary.printQRCode(`FICHE:${ticket.id}`, 10, 'middle');
-      await SunmiPrinterLibrary.lineWrap(1);
+      await imprimante.printQRCode(`FICHE:${ticket.id}`, 10, 'middle');
+      await imprimante.lineWrap(1);
     } catch {
       // Certains modeles peuvent ne pas supporter printQRCode : on ignore.
     }
@@ -315,12 +326,12 @@ export async function imprimerRapportSunmi(titre: string, lignes: LigneRapport[]
   await verifierImprimante();
   await imprimerEntete(entete, titre);
 
-  await SunmiPrinterLibrary.setAlignment('left');
+  await imprimante.setAlignment('left');
   for (const ligne of lignes) {
-    await SunmiPrinterLibrary.printColumnsText([ligne.label, ligne.valeur], [16, 11], ['left', 'right']);
+    await imprimante.printColumnsText([ligne.label, ligne.valeur], [16, 11], ['left', 'right']);
   }
-  await SunmiPrinterLibrary.setAlignment('center');
-  await SunmiPrinterLibrary.printText(SEPARATEUR);
+  await imprimante.setAlignment('center');
+  await imprimante.printText(SEPARATEUR);
 
   await imprimerPied(entete.texteFiche);
 }
@@ -344,20 +355,20 @@ export async function imprimerTransactionsSunmi(
   await verifierImprimante();
   await imprimerEntete(entete, 'Rapport Transaction');
 
-  await SunmiPrinterLibrary.setAlignment('left');
-  await SunmiPrinterLibrary.printColumnsText(['Solde', `${resume.balance.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
-  await SunmiPrinterLibrary.printColumnsText(['Total Recharge', `${resume.totalRecharge.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
-  await SunmiPrinterLibrary.printColumnsText(['Total Retrait', `${resume.totalRetrait.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
-  await SunmiPrinterLibrary.setAlignment('center');
-  await SunmiPrinterLibrary.printText(SEPARATEUR);
+  await imprimante.setAlignment('left');
+  await imprimante.printColumnsText(['Solde', `${resume.balance.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
+  await imprimante.printColumnsText(['Total Recharge', `${resume.totalRecharge.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
+  await imprimante.printColumnsText(['Total Retrait', `${resume.totalRetrait.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
+  await imprimante.setAlignment('center');
+  await imprimante.printText(SEPARATEUR);
 
-  await SunmiPrinterLibrary.setAlignment('left');
+  await imprimante.setAlignment('left');
   for (const t of transactions) {
-    await SunmiPrinterLibrary.printColumnsText([t.ref_code, t.type], [16, 11], ['left', 'right']);
-    await SunmiPrinterLibrary.printColumnsText([t.dateAffichee, `${t.montant.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
+    await imprimante.printColumnsText([t.ref_code, t.type], [16, 11], ['left', 'right']);
+    await imprimante.printColumnsText([t.dateAffichee, `${t.montant.toFixed(0)} HTG`], [16, 11], ['left', 'right']);
   }
-  await SunmiPrinterLibrary.setAlignment('center');
-  await SunmiPrinterLibrary.printText(SEPARATEUR);
+  await imprimante.setAlignment('center');
+  await imprimante.printText(SEPARATEUR);
 
   await imprimerPied(entete.texteFiche);
 }
