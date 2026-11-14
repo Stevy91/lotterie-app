@@ -39,6 +39,11 @@ export interface ImprimanteIpos {
   taille(taille: number): Promise<void>;
   gras(actif: boolean): Promise<void>;
   sauterLignes(nombre: number): Promise<void>;
+  /**
+   * Tableau du service. Le pilote ne s'en sert PAS : il dessine ses bordures,
+   * et il refuse en silence les lignes trop larges (voir colonnesEnTexte dans
+   * pilotes/pilote.ts). Conserve parce que le module reflete le service.
+   */
   colonnes(textes: string[], largeurs: number[], alignements: number[]): Promise<void>;
   qrCode(donnees: string, taille: number, correction: number): Promise<void>;
   /** Image en base64, sans prefixe data:, deja redimensionnee a 384 pixels au plus. */

@@ -139,6 +139,63 @@ const piloteSenraise: Pilote = {
 // iPos : meme interface, par-dessus le service AIDL des terminaux Zhaohe Q1/Q2.
 // ---------------------------------------------------------------------------
 
+/**
+ * Caracteres tenant sur une ligne a la taille par defaut : 384 pixels de
+ * papier, 12 pixels par caractere, soit 32. On s'arrete a 31 : a 32 pile, le
+ * dernier caractere part sur une ligne a lui seul.
+ */
+const CARACTERES_PAR_LIGNE = 31;
+
+/**
+ * Colonnes composees en texte, au lieu d'appeler printColumnsText du service.
+ *
+ * Deux raisons, constatees sur un Q2i :
+ *
+ * 1. Ce service dessine un VRAI tableau, bordures comprises. Les fiches
+ *    sortaient avec le total dans une case encadree.
+ * 2. Il refuse en silence toute ligne dont la somme des largeurs depasse
+ *    ((384 / taille) << 1) - (nombre de colonnes + 1), soit 28 a trois
+ *    colonnes. Les lignes de mises en demandent 30 : elles ne s'imprimaient
+ *    pas du tout. La fiche ne montrait que son total, sans les boules jouees.
+ *
+ * Les largeurs recues sont des poids : on les ramene a la largeur reelle du
+ * papier, la derniere colonne prenant le reste pour que la droite tombe juste.
+ */
+function colonnesEnTexte(textes: string[], largeurs: number[], alignements: Alignement[]): string {
+  const totalDemande = largeurs.reduce((somme, l) => somme + l, 0) || 1;
+
+  let reste = CARACTERES_PAR_LIGNE;
+  const calculees = largeurs.map((largeur, i) => {
+    const derniere = i === largeurs.length - 1;
+    const voulue = derniere ? reste : Math.round((largeur / totalDemande) * CARACTERES_PAR_LIGNE);
+    const retenue = Math.max(0, Math.min(voulue, reste));
+    reste -= retenue;
+
+    return retenue;
+  });
+
+  return textes
+    .map((texte, i) => {
+      const largeur = calculees[i] ?? 0;
+      if (largeur <= 0) return '';
+
+      // Tronquer plutot que deborder : une cellule trop longue repousserait
+      // tout le reste de la ligne et casserait l'alignement de la colonne de
+      // droite, celle des montants.
+      const contenu = texte.length > largeur ? texte.slice(0, largeur) : texte;
+      const blancs = largeur - contenu.length;
+
+      if (alignements[i] === 'right') return ' '.repeat(blancs) + contenu;
+      if (alignements[i] === 'center') {
+        const gauche = Math.floor(blancs / 2);
+        return ' '.repeat(gauche) + contenu + ' '.repeat(blancs - gauche);
+      }
+
+      return contenu + ' '.repeat(blancs);
+    })
+    .join('');
+}
+
 /** Ce que renvoie statut(), traduit pour le vendeur. */
 const ETATS_IPOS: Record<number, string> = {
   1: "L'imprimante n'a plus de papier.",
@@ -181,8 +238,9 @@ const piloteIpos: Pilote = {
   setAlignment: (a) => IposPrinter!.alignement(ALIGNEMENTS[a]),
   printText: (t) => IposPrinter!.texte(t),
 
+  // Volontairement du texte et non IposPrinter.colonnes : voir colonnesEnTexte.
   printColumnsText: (textes, largeurs, alignements) =>
-    IposPrinter!.colonnes(textes, largeurs, alignements.map((a) => ALIGNEMENTS[a])),
+    IposPrinter!.texte(`${colonnesEnTexte(textes, largeurs, alignements)}\n`),
 
   setTextStyle: (_style, actif) => IposPrinter!.gras(actif),
   setFontSize: (taille) => IposPrinter!.taille(taille),

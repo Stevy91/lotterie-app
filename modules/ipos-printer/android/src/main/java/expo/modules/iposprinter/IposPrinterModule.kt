@@ -6,6 +6,8 @@ import android.content.ComponentName
 import android.content.ServiceConnection
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
 import android.os.IBinder
 import android.util.Base64
 import com.iposprinter.iposprinterservice.IPosPrinterCallback
@@ -168,13 +170,36 @@ class IposPrinterModule : Module() {
       val image: Bitmap = BitmapFactory.decodeByteArray(octets, 0, octets.size)
         ?: throw CodedException("IMAGE_ILLISIBLE", "Image illisible : base64 invalide ou format non supporte.", null)
 
-      service().printBitmap(alignement, DECOUPAGE_IMAGE, image, rappelMuet)
+      service().printBitmap(alignement, DECOUPAGE_IMAGE, surFondBlanc(image), rappelMuet)
     }
   }
 
   /** La taille demandee, ramenee a la plus proche que le service accepte. */
   private fun tailleSupportee(taille: Int): Int =
     TAILLES_SUPPORTEES.minByOrNull { kotlin.math.abs(it - taille) } ?: 24
+
+  /**
+   * L'image posee sur un fond blanc, sans couche de transparence.
+   *
+   * Le logo arrive en PNG, qui conserve la transparence. Le service convertit
+   * en noir et blanc d'apres la seule couleur des pixels, sans regarder leur
+   * opacite : un fond transparent, dont la couleur est noire, ressortait en
+   * rectangle noir plein a la place du logo.
+   */
+  private fun surFondBlanc(source: Bitmap): Bitmap {
+    if (source.width <= 0 || source.height <= 0) {
+      return source
+    }
+
+    val aplati = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+
+    Canvas(aplati).apply {
+      drawColor(Color.WHITE)
+      drawBitmap(source, 0f, 0f, null)
+    }
+
+    return aplati
+  }
 
   /**
    * Liaison au service, au plus une fois. Bloque le temps que le systeme
