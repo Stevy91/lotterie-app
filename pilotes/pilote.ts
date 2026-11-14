@@ -31,6 +31,11 @@ export interface Pilote {
   numeroSerie(): Promise<string | null>;
   debuter(): Promise<void>;
   terminer(): Promise<void>;
+  /**
+   * Referme le bloc apres un ECHEC, sans imprimer quand le materiel sait le
+   * faire. Appele a la place de terminer() : voir imprimerBloc().
+   */
+  annuler(): Promise<void>;
   setAlignment(alignement: Alignement): Promise<void>;
   printText(texte: string): Promise<void>;
   printColumnsText(textes: string[], largeurs: number[], alignements: Alignement[]): Promise<void>;
@@ -65,9 +70,11 @@ const piloteSunmi: Pilote = {
     return serialNumber || null;
   },
 
-  // Sunmi imprime au fil de l'eau : rien a encadrer.
+  // Sunmi imprime au fil de l'eau : rien a encadrer, et rien a annuler non
+  // plus -- ce qui a deja ete envoye est deja sorti.
   async debuter() {},
   async terminer() {},
+  async annuler() {},
 
   setAlignment: (a) => SunmiPrinterLibrary.setAlignment(a),
   printText: (t) => SunmiPrinterLibrary.printText(t),
@@ -116,6 +123,12 @@ const piloteSenraise: Pilote = {
   // morceaux et une fiche longue sort entrecoupee de blancs.
   debuter: () => SenraisePrinter!.debuter(),
   terminer: () => SenraisePrinter!.terminer(),
+
+  // Le service ne sait pas jeter ce qu'il a accumule : endWork() est le seul
+  // moyen de refermer le bloc. On accepte donc la fiche partielle, bien moins
+  // penalisante qu'un bloc laisse ouvert, dont le contenu sortirait colle a la
+  // fiche suivante.
+  annuler: () => SenraisePrinter!.terminer(),
 
   setAlignment: (a) => SenraisePrinter!.alignement(ALIGNEMENTS[a]),
   printText: (t) => SenraisePrinter!.texte(t),
@@ -231,6 +244,10 @@ const piloteIpos: Pilote = {
   debuter: () => IposPrinter!.debuter(),
   terminer: () => IposPrinter!.terminer(),
 
+  // Comme SENRAISE : pas d'annulation cote service. On referme, quitte a
+  // sortir une fiche incomplete, plutot que de laisser le bloc ouvert.
+  annuler: () => IposPrinter!.terminer(),
+
   setAlignment: (a) => IposPrinter!.alignement(ALIGNEMENTS[a]),
   printText: (t) => IposPrinter!.texte(t),
 
@@ -307,6 +324,14 @@ const piloteBluetooth: Pilote = {
 
   async terminer() {
     await viderFile();
+  },
+
+  // Seul pilote qui peut vraiment annuler : rien n'est encore parti sur la
+  // liaison. On jette les octets en attente plutot que d'imprimer une
+  // demi-fiche, qu'un vendeur pourrait remettre a un client en la croyant
+  // complete.
+  async annuler() {
+    fileOctets = [];
   },
 
   async setAlignment(a) {

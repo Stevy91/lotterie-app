@@ -133,24 +133,30 @@ async function verifierImprimante(): Promise<void> {
  * Encadre une impression : ouvre le bloc, compose la fiche, puis le referme
  * QUOI QU'IL ARRIVE.
  *
- * Le finally n'est pas decoratif. Sur SENRAISE (et sur iPos), tout ce qui est
- * imprime entre debuter() et terminer() est accumule par le service : une
- * erreur en cours de fiche laissait le bloc ouvert, et la fiche SUIVANTE
- * sortait collee aux morceaux de celle qui avait echoue. Sur Sunmi,
- * terminer() ne fait rien.
+ * La fermeture n'est pas decorative. Sur SENRAISE, iPos et Bluetooth, tout ce
+ * qui est imprime entre debuter() et terminer() est accumule : une erreur en
+ * cours de fiche laissait le bloc ouvert, et la fiche SUIVANTE sortait collee
+ * aux morceaux de celle qui avait echoue. Sur Sunmi, terminer() ne fait rien.
+ *
+ * Echec et succes se ferment differemment : annuler() jette ce qui est en
+ * attente quand le materiel sait le faire, pour qu'une demi-fiche ne sorte pas
+ * de l'imprimante avec l'air d'une vraie.
  */
 async function imprimerBloc(composer: () => Promise<void>): Promise<void> {
   await verifierImprimante();
 
   try {
     await composer();
-  } finally {
+  } catch (e) {
     try {
-      await imprimante.terminer();
+      await imprimante.annuler();
     } catch {
       // Un echec de fermeture ne doit pas masquer la vraie raison de la panne.
     }
+    throw e;
   }
+
+  await imprimante.terminer();
 }
 
 // Identifiant de l'appareil, utilise pour verrouiller un compte sous-agent a
