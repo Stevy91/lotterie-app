@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!--
+    Depuis Android 11, une application ne voit pas les autres paquets installes
+    sauf a les declarer ici. Sans ce bloc, getPackageInfo() leve
+    NameNotFoundException et bindService() echoue en silence : la detection
+    conclurait a tort que le terminal n'a pas d'imprimante iPos, et l'app
+    retomberait sur le pilote Sunmi, qui lui ne trouvera rien non plus.
+  -->
+  <queries>
+    <package android:name="com.iposprinter.iposprinterservice" />
+  </queries>
+
+</manifest>

@@ -1,0 +1,23 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.iposprinter'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.iposprinter"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  // AGP 8 ne compile plus les .aidl par defaut. Sans cette ligne,
+  // IPosPrinterService n'est jamais genere et le module ne compile pas.
+  buildFeatures {
+    aidl true
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
