@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SelecteurDate from '../composants/SelecteurDate';
 import EcranDetailFiche from './EcranDetailFiche';
+import { useActionsUniques } from '../actionUnique';
 import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { obtenirNumeroSeriePosStocke, Utilisateur } from '../auth';
@@ -59,6 +60,10 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
   const [dateDebut, setDateDebut] = useState(new Date());
   const [dateFin, setDateFin] = useState(new Date());
   const [rechercheTexte, setRechercheTexte] = useState('');
+
+  // Verrou anti double-appui : voir actionUnique.ts.
+  const { enCours, lancer } = useActionsUniques();
+  const occupe = !!enCours || chargement;
   const [ticketSelectionne, setTicketSelectionne] = useState<number | null>(null);
 
   // Le detail d'une fiche s'ouvre PAR-DESSUS la liste : le bouton retour du POS
@@ -188,8 +193,14 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
         </View>
       </View>
 
-      <TouchableOpacity style={styles.boutonRecherche} onPress={charger}>
-        <Text style={styles.boutonRechercheTexte}>Rechercher</Text>
+      <TouchableOpacity
+        style={[styles.boutonRecherche, occupe ? styles.boutonRechercheInactif : null]}
+        onPress={lancer('rechercher', charger)}
+        disabled={occupe}
+      >
+        {occupe
+          ? <ActivityIndicator size="small" color="#fff" />
+          : <Text style={styles.boutonRechercheTexte}>Rechercher</Text>}
       </TouchableOpacity>
 
       <TextInput
@@ -228,7 +239,11 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
                   <TouchableOpacity
                     style={{ flex: 1.3 }}
                     onPress={() => setTicketSelectionne(item.id)}
-                    onLongPress={() => item.statut === 'en_attente' && confirmerAnnulation(item)}
+                    // Annulation sur appui long : verrouillee elle aussi, pour
+                    // qu'on ne la lance pas pendant qu'une recherche tourne.
+                    onLongPress={() => {
+                      if (!occupe && item.statut === 'en_attente') confirmerAnnulation(item);
+                    }}
                   >
                     <Text style={styles.celluleTicket}>{item.numero_ticket}</Text>
                   </TouchableOpacity>
@@ -295,6 +310,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#333',
     fontWeight: '600',
+  },
+  // Verrou anti double-appui : le bouton doit se voir eteint, sinon le vendeur
+  // croit que son appui n'a pas ete pris et insiste.
+  boutonRechercheInactif: {
+    opacity: 0.5,
   },
   boutonRecherche: {
     backgroundColor: '#e67e22',

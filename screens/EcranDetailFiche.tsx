@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useActionsUniques } from '../actionUnique';
 import { alerteConfirmation, alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { obtenirNumeroSeriePosStocke, Utilisateur } from '../auth';
@@ -22,6 +23,12 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
   const [chargement, setChargement] = useState(true);
   const [enCours, setEnCours] = useState(false);
   const [dureeSuppressionMinutes, setDureeSuppressionMinutes] = useState(10);
+
+  // Verrou anti double-appui (voir actionUnique.ts). Il complete le drapeau
+  // enCours ci-dessus, qui ne couvrait ni l'impression ni le bouton Rejouer de
+  // la fenetre de confirmation, et qui n'affichait rien a l'ecran.
+  const { enCours: actionEnCours, lancer } = useActionsUniques();
+  const occupe = enCours || !!actionEnCours;
 
   // Rejeu : le client peut vouloir rejouer les memes boules sur d'AUTRES zones,
   // on lui propose donc la liste des zones encore ouvertes aujourd'hui.
@@ -330,13 +337,15 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
           ]).map(([libelle, icone, couleur, action]) => (
             <TouchableOpacity
               key={libelle}
-              style={[styles.carteAction, { backgroundColor: couleur }]}
-              onPress={action}
-              disabled={enCours}
+              style={[styles.carteAction, { backgroundColor: couleur }, occupe ? styles.carteActionInactive : null]}
+              onPress={lancer(libelle, action)}
+              disabled={occupe}
               activeOpacity={0.85}
             >
               <View style={styles.carteActionIcone}>
-                <Ionicons name={icone as any} size={20} color="#fff" />
+                {actionEnCours === libelle
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Ionicons name={icone as any} size={20} color="#fff" />}
               </View>
               <Text style={styles.carteActionTexte}>{libelle}</Text>
             </TouchableOpacity>
@@ -383,12 +392,18 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
               <TouchableOpacity style={styles.boutonAnnuler} onPress={() => setModalRejeu(false)}>
                 <Text style={styles.boutonAnnulerTexte}>Annuler</Text>
               </TouchableOpacity>
+              {/* Ce bouton engage de l'argent : il n'etait protege que contre
+                  une liste de zones vide, pas contre un second appui. Sur un
+                  reseau lent, le vendeur reappuyait et la mise partait deux
+                  fois. */}
               <TouchableOpacity
-                style={[styles.boutonValider, zonesChoisies.length === 0 && styles.boutonDesactive]}
-                onPress={rejouer}
-                disabled={zonesChoisies.length === 0}
+                style={[styles.boutonValider, (occupe || zonesChoisies.length === 0) && styles.boutonDesactive]}
+                onPress={lancer('rejouer', rejouer)}
+                disabled={occupe || zonesChoisies.length === 0}
               >
-                <Text style={styles.boutonTexte}>Rejouer</Text>
+                {actionEnCours === 'rejouer'
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={styles.boutonTexte}>Rejouer</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -400,6 +415,11 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
 
 const styles = StyleSheet.create({
   // Cartes d'action : meme langage visuel que les boutons de Parametre.
+  // Verrou anti double-appui : le bouton doit se voir eteint, sinon le vendeur
+  // croit que son appui n'a pas ete pris et insiste.
+  carteActionInactive: {
+    opacity: 0.5,
+  },
   carteAction: {
     flexDirection: 'row',
     alignItems: 'center',
