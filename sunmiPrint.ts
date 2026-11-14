@@ -118,7 +118,7 @@ async function verifierImprimante(): Promise<void> {
   try {
     imprimante = await obtenirPilote();
     await imprimante.prepare();
-    // Ouvre le bloc d'impression, referme par imprimerPied(). Sur SENRAISE le
+    // Ouvre le bloc d'impression, referme par imprimerBloc(). Sur SENRAISE le
     // service accumule puis envoie d'un coup : sans cet encadrement, une fiche
     // longue sort en morceaux separes par des blancs. Sur Sunmi, sans effet.
     await imprimante.debuter();
@@ -126,6 +126,30 @@ async function verifierImprimante(): Promise<void> {
     // On remonte le detail brut de l'erreur native : le message par defaut
     // masquait la vraie cause quand l'erreur native n'a pas de .message.
     throw new Error(`prepare() a echoue: ${e?.message || e?.code || JSON.stringify(e) || 'erreur inconnue'}`);
+  }
+}
+
+/**
+ * Encadre une impression : ouvre le bloc, compose la fiche, puis le referme
+ * QUOI QU'IL ARRIVE.
+ *
+ * Le finally n'est pas decoratif. Sur SENRAISE (et sur iPos), tout ce qui est
+ * imprime entre debuter() et terminer() est accumule par le service : une
+ * erreur en cours de fiche laissait le bloc ouvert, et la fiche SUIVANTE
+ * sortait collee aux morceaux de celle qui avait echoue. Sur Sunmi,
+ * terminer() ne fait rien.
+ */
+async function imprimerBloc(composer: () => Promise<void>): Promise<void> {
+  await verifierImprimante();
+
+  try {
+    await composer();
+  } finally {
+    try {
+      await imprimante.terminer();
+    } catch {
+      // Un echec de fermeture ne doit pas masquer la vraie raison de la panne.
+    }
   }
 }
 
@@ -214,10 +238,6 @@ async function imprimerPied(texteFiche?: string | null): Promise<void> {
   } catch {
     // Le Sunmi V2 (portable) n'a pas de massicot -- disponible seulement sur les modeles de bureau.
   }
-
-  // Referme le bloc ouvert par verifierImprimante() : c'est CET appel qui
-  // declenche reellement l'impression sur SENRAISE.
-  await imprimante.terminer();
 }
 
 /**
@@ -226,7 +246,10 @@ async function imprimerPied(texteFiche?: string | null): Promise<void> {
  * ticket + total par ticket + grand total si plusieurs tickets).
  */
 export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: EnteteRecu): Promise<void> {
-  await verifierImprimante();
+  await imprimerBloc(() => composerFiches(tickets, entete));
+}
+
+async function composerFiches(tickets: TicketResponse[], entete: EnteteRecu): Promise<void> {
   // Date d'en-tete = date de CREATION du ticket (pas la date d'impression) :
   // une fiche reimprimee 2 jours apres garde ainsi sa date d'origine. La date
   // d'impression reelle reste affichee en bas (« Impression: ... »).
@@ -333,7 +356,10 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
  * sous forme de liste label/valeur, avec la meme entete que les fiches.
  */
 export async function imprimerRapportSunmi(titre: string, lignes: LigneRapport[], entete: EnteteRecu): Promise<void> {
-  await verifierImprimante();
+  await imprimerBloc(() => composerRapport(titre, lignes, entete));
+}
+
+async function composerRapport(titre: string, lignes: LigneRapport[], entete: EnteteRecu): Promise<void> {
   await imprimerEntete(entete, titre);
 
   await imprimante.setAlignment('left');
@@ -362,7 +388,14 @@ export async function imprimerTransactionsSunmi(
   transactions: LigneTransaction[],
   entete: EnteteRecu
 ): Promise<void> {
-  await verifierImprimante();
+  await imprimerBloc(() => composerTransactions(resume, transactions, entete));
+}
+
+async function composerTransactions(
+  resume: { balance: number; totalRecharge: number; totalRetrait: number },
+  transactions: LigneTransaction[],
+  entete: EnteteRecu
+): Promise<void> {
   await imprimerEntete(entete, 'Rapport Transaction');
 
   await imprimante.setAlignment('left');
