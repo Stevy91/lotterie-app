@@ -3,6 +3,9 @@ import * as SunmiPrinterLibrary from '@mitsuharu/react-native-sunmi-printer-libr
 
 import SenraisePrinter from '../modules/senraise-printer';
 import IposPrinter from '../modules/ipos-printer';
+import BluetoothPrinter from '../modules/bluetooth-printer';
+import * as EscPos from './escpos';
+import { CARACTERES_PAR_LIGNE, enBase64 } from './escpos';
 
 /**
  * Choix du pilote d'impression selon le terminal.
@@ -22,7 +25,7 @@ export type Alignement = 'left' | 'center' | 'right';
 export type NiveauQr = 'low' | 'middle' | 'quartile' | 'high';
 
 export interface Pilote {
-  readonly nom: 'sunmi' | 'senraise' | 'ipos';
+  readonly nom: 'sunmi' | 'senraise' | 'ipos' | 'bluetooth';
   prepare(): Promise<void>;
   /** Numero de serie du terminal, ou null si le materiel n'en expose pas. */
   numeroSerie(): Promise<string | null>;
@@ -140,13 +143,6 @@ const piloteSenraise: Pilote = {
 // ---------------------------------------------------------------------------
 
 /**
- * Caracteres tenant sur une ligne a la taille par defaut : 384 pixels de
- * papier, 12 pixels par caractere, soit 32. On s'arrete a 31 : a 32 pile, le
- * dernier caractere part sur une ligne a lui seul.
- */
-const CARACTERES_PAR_LIGNE = 31;
-
-/**
  * Colonnes composees en texte, au lieu d'appeler printColumnsText du service.
  *
  * Deux raisons, constatees sur un Q2i :
@@ -260,6 +256,108 @@ const piloteIpos: Pilote = {
 };
 
 // ---------------------------------------------------------------------------
+// Bluetooth : meme interface, par-dessus une imprimante ESC/POS appairee.
+// ---------------------------------------------------------------------------
+
+/**
+ * Les octets en attente pour la fiche en cours.
+ *
+ * Contrairement aux trois autres pilotes, il n'y a ici aucun service a qui
+ * confier la mise en page : on envoie des octets sur une liaison serie. Les
+ * accumuler et les envoyer d'un bloc evite des dizaines d'ecritures Bluetooth
+ * successives, lentes et sujettes aux coupures en milieu de fiche.
+ */
+let fileOctets: number[] = [];
+
+function empiler(octets: number[]): void {
+  for (const octet of octets) {
+    fileOctets.push(octet);
+  }
+}
+
+async function viderFile(): Promise<void> {
+  if (fileOctets.length === 0) return;
+
+  const paquet = fileOctets;
+  fileOctets = [];
+  await BluetoothPrinter!.envoyer(enBase64(paquet));
+}
+
+const piloteBluetooth: Pilote = {
+  nom: 'bluetooth',
+
+  async prepare() {
+    if (!BluetoothPrinter) {
+      throw new Error("Le module d'impression Bluetooth n'est pas embarque dans cette version de l'app.");
+    }
+    await BluetoothPrinter.connecter();
+  },
+
+  // Aucun numero de serie : l'appelant retombe sur l'identifiant Android.
+  async numeroSerie() {
+    return null;
+  },
+
+  async debuter() {
+    // Repartir de zero : si une fiche precedente a echoue en cours de route,
+    // ses octets restants sortiraient en tete de celle-ci.
+    fileOctets = [];
+    empiler(EscPos.initialiser());
+  },
+
+  async terminer() {
+    await viderFile();
+  },
+
+  async setAlignment(a) {
+    empiler(EscPos.alignement(ALIGNEMENTS[a]));
+  },
+
+  async printText(t) {
+    empiler(EscPos.texte(t));
+  },
+
+  async printColumnsText(textes, largeurs, alignements) {
+    empiler(EscPos.texte(`${colonnesEnTexte(textes, largeurs, alignements)}\n`));
+  },
+
+  async setTextStyle(_style, actif) {
+    empiler(EscPos.gras(actif));
+  },
+
+  async setFontSize(t) {
+    empiler(EscPos.taille(t));
+  },
+
+  async setDefaultFontSize() {
+    empiler(EscPos.taille(TAILLE_POLICE_DEFAUT));
+  },
+
+  async lineWrap(lignes) {
+    empiler(EscPos.sauterLignes(lignes));
+  },
+
+  async printQRCode(donnees, taille, niveau) {
+    empiler(EscPos.qrCode(donnees, taille, NIVEAUX_QR[niveau]));
+  },
+
+  // La trame est fabriquee par le module natif, qui sait decoder un bitmap.
+  // On vide d'abord la file : sinon l'image sortirait AVANT le texte qui la
+  // precede, puisqu'elle part par un autre chemin.
+  async printImage(dataUri) {
+    const trame = await BluetoothPrinter!.trameImage(dataUri.replace(/^data:[^,]+,/, ''));
+    await viderFile();
+    await BluetoothPrinter!.envoyer(trame);
+  },
+
+  // Terminal portable, sans massicot : on avance le papier pour degager la
+  // fiche, que le vendeur dechire a la main.
+  async cutPaper() {
+    empiler(EscPos.sauterLignes(3));
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Detection
 // ---------------------------------------------------------------------------
 
@@ -279,9 +377,12 @@ export async function obtenirPilote(): Promise<Pilote> {
     throw new Error("L'impression n'est disponible que sur Android.");
   }
 
+  // Bluetooth en dernier des trois : un service installe est une preuve plus
+  // sure qu'un appareil appaire, qu'un vendeur pourrait avoir ajoute lui-meme.
   const candidats: Array<[{ estDisponible(): Promise<boolean> } | null, Pilote]> = [
     [SenraisePrinter, piloteSenraise],
     [IposPrinter, piloteIpos],
+    [BluetoothPrinter, piloteBluetooth],
   ];
 
   for (const [module, pilote] of candidats) {

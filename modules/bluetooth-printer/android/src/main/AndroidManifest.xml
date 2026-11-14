@@ -1,0 +1,20 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <!--
+    Jusqu'a Android 11, ces deux permissions suffisent et sont accordees a
+    l'installation : c'est le cas des terminaux concernes, qui tournent en
+    Android 8.1.
+  -->
+  <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+  <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+
+  <!--
+    Android 12 et au-dela : permission demandee a l'execution. On declare
+    explicitement que l'application ne se sert PAS du Bluetooth pour deduire la
+    position de l'utilisateur, sinon le systeme exigerait en plus l'acces a la
+    localisation pour une simple impression.
+  -->
+  <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"
+                   android:usesPermissionFlags="neverForLocation" />
+
+</manifest>
