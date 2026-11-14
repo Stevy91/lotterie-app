@@ -153,24 +153,40 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
       setEnCours(true);
       setModalRejeu(false);
 
-      // Les memes boules sont rejouees sur CHAQUE zone selectionnee.
+      // UNE FICHE PAR ZONE, comme a la vente (voir EcranCreerFiche). Tout le
+      // reste du systeme compte une fiche pour une zone : l'impression, les
+      // rapports, l'exposition au risque. Un envoi unique portant les trois
+      // zones creait UNE seule fiche, rattachee a la premiere, et les deux
+      // autres zones disparaissaient alors que la fenetre les avait facturees.
       const modele = modeleDeMises();
-      const mises = zonesChoisies.flatMap((tirageId) =>
-        modele.map((m) => ({ ...m, tirage_id: tirageId }))
-      );
+      const crees: TicketResponse[] = [];
 
-      const reponseCreation = await appelApi('/tickets', {
-        method: 'POST',
-        body: JSON.stringify({ mises }),
-      });
+      for (const tirageId of zonesChoisies) {
+        const reponse = await appelApi('/tickets', {
+          method: 'POST',
+          body: JSON.stringify({
+            mises: modele.map((m) => ({ ...m, tirage_id: tirageId })),
+          }),
+        });
 
-      if (!reponseCreation.ok) {
-        const erreur = await reponseCreation.json();
-        throw new Error(erreur.message);
+        if (!reponse.ok) {
+          const erreur = await reponse.json();
+          // Une zone refusee (plafond atteint, zone fermee) annule celles deja
+          // parties : sinon le vendeur paie des fiches qu'il n'a pas voulues,
+          // pour un rejeu qu'il croit avoir echoue.
+          await Promise.all(
+            crees.map((t) => appelApi(`/tickets/${t.id}/annuler`, { method: 'POST' }).catch(() => {}))
+          );
+          throw new Error(erreur.message ?? 'Erreur inconnue');
+        }
+
+        crees.push(await reponse.json());
       }
 
-      const nouveauTicket: TicketResponse = await reponseCreation.json();
-      alerteSimple('Fiche rejouee', `Nouvelle fiche creee : ${nouveauTicket.numero_ticket}`);
+      alerteSimple(
+        crees.length > 1 ? `${crees.length} fiches rejouees` : 'Fiche rejouee',
+        `Nouvelle(s) fiche(s) : ${crees.map((t) => t.numero_ticket).join(', ')}`
+      );
     } catch (e: any) {
       alerteSimple('Attention', e.message ?? 'Impossible de rejouer cette fiche.');
     } finally {
