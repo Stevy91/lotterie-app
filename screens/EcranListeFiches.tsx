@@ -145,6 +145,7 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
         vendeurNom: parent ? `${parent} ${soi}` : soi,
         logoUrl: utilisateur.logo_url ?? config.logo_url ?? undefined,
         texteFiche: config.text_fiche,
+        afficherQr: config.qr_fiche !== 'Non',
       });
     } catch (e: any) {
       alerteSimple('Impression impossible', e.message ?? "L'imprimante du terminal n'est pas disponible.");

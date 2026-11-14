@@ -23,6 +23,10 @@ export interface EnteteRecu {
   logoUrl?: string | null;
   // Texte configure par le proprietaire, imprime en bas de chaque fiche.
   texteFiche?: string | null;
+  // Reglage du proprietaire (« Parametres » du backoffice). Non renseigne, le
+  // QR s'imprime : les terminaux deja en service ne changent pas de
+  // comportement a la mise a jour.
+  afficherQr?: boolean;
 }
 
 export interface LigneRapport {
@@ -303,15 +307,21 @@ export async function imprimerFichesSunmi(tickets: TicketResponse[], entete: Ent
 
   // QR code de chaque fiche, en bas, au-dessus du texte configure : scanner
   // ce QR dans l'app ouvre directement le detail de la fiche (voir EcranScanner).
-  for (const ticket of tickets) {
-    await imprimante.setAlignment('center');
-    await imprimante.printText(`${ticket.numero_ticket}\n`);
-    try {
-      // Module 10 : QR plus grand et plus facile a scanner sur papier thermique.
-      await imprimante.printQRCode(`FICHE:${ticket.id}`, 10, 'middle');
-      await imprimante.lineWrap(1);
-    } catch {
-      // Certains modeles peuvent ne pas supporter printQRCode : on ignore.
+  //
+  // Le proprietaire peut le couper depuis « Parametres ». On saute alors tout
+  // le bloc, numero compris : ce numero n'est la que pour legender le QR, il
+  // figure deja dans le corps de la fiche.
+  if (entete.afficherQr !== false) {
+    for (const ticket of tickets) {
+      await imprimante.setAlignment('center');
+      await imprimante.printText(`${ticket.numero_ticket}\n`);
+      try {
+        // Module 10 : QR plus grand et plus facile a scanner sur papier thermique.
+        await imprimante.printQRCode(`FICHE:${ticket.id}`, 10, 'middle');
+        await imprimante.lineWrap(1);
+      } catch {
+        // Certains modeles peuvent ne pas supporter printQRCode : on ignore.
+      }
     }
   }
 

@@ -192,6 +192,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
         vendeurNom,
         logoUrl: utilisateur.logo_url ?? config.logo_url,
         texteFiche: config.text_fiche,
+        afficherQr: config.qr_fiche !== 'Non',
       });
     } catch (e: any) {
       alerteSimple('Impression impossible', e.message ?? "L'imprimante du terminal n'est pas disponible.");
