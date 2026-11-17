@@ -120,6 +120,10 @@ export default function EcranCompte({ utilisateur, onRetour }: Props) {
         <View style={styles.carteBalance}>
           <Text style={styles.labelSolde}>Votre solde</Text>
           <Text style={styles.valeurSolde}>{(donnees?.balance ?? 0).toFixed(0)} HTG</Text>
+          {/* Le solde au-dessus est celui d'AUJOURD'HUI, quelles que soient
+              les dates choisies ; les deux totaux ci-dessous, eux, suivent le
+              filtre. Sans le dire, on lit les trois comme une seule chose. */}
+          <Text style={styles.sousTotal}>Sur la periode choisie :</Text>
           <Text style={styles.sousTotal}>Total Recharge : {(donnees?.total_recharge ?? 0).toFixed(0)} HTG</Text>
           <Text style={styles.sousTotal}>Total Retrait : {(donnees?.total_retrait ?? 0).toFixed(0)} HTG</Text>
         </View>
