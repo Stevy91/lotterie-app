@@ -20,7 +20,21 @@ interface RapportFinTirage {
   fiche_gagnant: number;
   vente: number;
   commission: number;
+  /** Gains de la periode deja remis au client. */
   paiement: number;
+  /** Tout ce que les gagnants de la periode ont droit de recevoir, paye ou non. */
+  gains_dus?: number;
+  /** Gains dus dont l'argent est encore dans la caisse du vendeur. */
+  pas_encore_paye?: number;
+  /** Vente - gains dus, sur la periode choisie. */
+  balance_periode?: number;
+  balance_periode_avec_commission?: number;
+  /**
+   * Solde COURANT du compte : un cumul depuis toujours, independant des dates.
+   * A ne pas confondre avec les deux balances ci-dessus -- c'est precisement
+   * cette confusion qui faisait afficher 17 230 la ou le backoffice disait
+   * 10 450 pour la meme periode.
+   */
   balance: number;
 }
 
@@ -28,6 +42,29 @@ interface RapportFicheGagnant {
   fiche_gagnant: number;
   total_mise: number;
   total_gain: number;
+}
+
+/**
+ * Les chiffres de la PERIODE choisie.
+ *
+ * A ne pas confondre avec rapport.balance, qui est le solde courant du compte
+ * et ignore les dates : l'ecran affichait ce solde sous le nom « Balance », et
+ * le POS annoncait 17 230 la ou le backoffice disait 10 450 pour la meme
+ * periode. Les deux ecrans partent desormais de la meme base.
+ *
+ * Les valeurs de repli servent si le serveur n'a pas encore ete mis a jour :
+ * l'app reste juste au lieu d'afficher des cases vides.
+ */
+function chiffresPeriode(rapport: RapportFinTirage) {
+  const gainsDus = rapport.gains_dus ?? rapport.paiement;
+  const balance = rapport.balance_periode ?? rapport.vente - gainsDus;
+
+  return {
+    gainsDus,
+    pasEncorePaye: rapport.pas_encore_paye ?? gainsDus - rapport.paiement,
+    balance,
+    balanceAvecCommission: rapport.balance_periode_avec_commission ?? balance - rapport.commission,
+  };
 }
 
 function versDateApi(date: Date): string {
@@ -91,6 +128,7 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
         return;
       }
       titre = 'Rapport Fin Tirage';
+      const chiffres = chiffresPeriode(rapport);
       lignes = [
         { label: 'Tirage :', valeur: loterieChoisie?.nom ?? 'Tout' },
         { label: 'Date :', valeur: `${formaterDateAffichage(dateDebut)} - ${formaterDateAffichage(dateFin)}` },
@@ -99,8 +137,14 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
         { label: 'Fiche Gagnant :', valeur: String(rapport.fiche_gagnant) },
         { label: 'Vente :', valeur: rapport.vente.toFixed(0) },
         { label: 'Commission :', valeur: rapport.commission.toFixed(0) },
-        { label: 'Paiment :', valeur: rapport.paiement.toFixed(0) },
-        { label: 'Balance :', valeur: rapport.balance.toFixed(0) },
+        { label: 'Gains dus :', valeur: chiffres.gainsDus.toFixed(0) },
+        { label: 'Deja paye :', valeur: rapport.paiement.toFixed(0) },
+        { label: 'Pas encore paye :', valeur: chiffres.pasEncorePaye.toFixed(0) },
+        { label: 'Balance :', valeur: chiffres.balance.toFixed(0) },
+        { label: 'Balance (comm.) :', valeur: chiffres.balanceAvecCommission.toFixed(0) },
+        // Le solde du compte ne depend pas des dates : il est nomme a part,
+        // sinon on le lit comme un resultat de la periode.
+        { label: 'Solde du compte :', valeur: rapport.balance.toFixed(0) },
       ];
     } else {
       alerteSimple('Aucun rapport', "Choisis d'abord un type de rapport (Partiel, Fin Tirage, F.Gagnant).");
@@ -381,9 +425,14 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
                 <LigneDetail label="Fiche Gagnant :" valeur={String(rapport.fiche_gagnant)} />
                 <LigneDetail label="Vente :" valeur={rapport.vente.toFixed(0)} />
                 <LigneDetail label="Commission :" valeur={rapport.commission.toFixed(0)} />
-                <LigneDetail label="Paiment :" valeur={rapport.paiement.toFixed(0)} />
-                <LigneDetail label="Balance :" valeur={rapport.balance.toFixed(0)} />
-                <LigneDetail label="Balance2 :" valeur={rapport.balance.toFixed(0)} />
+                <LigneDetail label="Gains dus :" valeur={chiffresPeriode(rapport).gainsDus.toFixed(0)} />
+                <LigneDetail label="Deja paye :" valeur={rapport.paiement.toFixed(0)} />
+                <LigneDetail label="Pas encore paye :" valeur={chiffresPeriode(rapport).pasEncorePaye.toFixed(0)} />
+                <LigneDetail label="Balance :" valeur={chiffresPeriode(rapport).balance.toFixed(0)} />
+                <LigneDetail label="Balance (comm.) :" valeur={chiffresPeriode(rapport).balanceAvecCommission.toFixed(0)} />
+                {/* Le solde du compte ne depend pas des dates : nomme a part,
+                    sinon on le lit comme un resultat de la periode. */}
+                <LigneDetail label="Solde du compte :" valeur={rapport.balance.toFixed(0)} />
               </View>
             )}
           </>
