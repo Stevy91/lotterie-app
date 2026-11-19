@@ -10,6 +10,11 @@ export async function fetchAvecTimeout(
   options: RequestInit = {},
   delaiMs: number = DELAI_PAR_DEFAUT_MS
 ): Promise<Response> {
+  // Un appelant peut passer undefined pour « le delai par defaut » : sans ce
+  // repli, la valeur par defaut du parametre serait contournee et setTimeout
+  // declencherait immediatement.
+  delaiMs ??= DELAI_PAR_DEFAUT_MS;
+
   const controleur = new AbortController();
   const idDelai = setTimeout(() => controleur.abort(), delaiMs);
 

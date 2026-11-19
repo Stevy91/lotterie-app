@@ -108,6 +108,9 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
   const [miseCheckee, setMiseCheckee] = useState(false);
 
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  // Cle d'envoi de la fiche en cours : voir validerTicket. Un ref et non un
+  // state, parce qu'elle doit survivre aux rendus sans en declencher.
+  const cleEnvoi = useRef<string | null>(null);
   // Un client qui joue dans plusieurs zones (tirages) obtient une fiche
   // separee par zone, imprimees ensemble avec un Grand Total.
   const [tickets, setTickets] = useState<TicketResponse[]>([]);
@@ -687,6 +690,19 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     // automatiquement 2 tickets, imprimes ensemble avec un Grand Total.
     const idsZones = [...new Set(lignes.map((l) => l.tirage.id))];
 
+    // Cle d'envoi, generee UNE fois pour cette fiche et conservee tant qu'elle
+    // n'est pas enregistree. Si l'envoi echoue et que le vendeur reappuie, la
+    // meme cle repart : le serveur reconnait la fiche et renvoie celle qu'il a
+    // deja creee, au lieu d'en faire une deuxieme.
+    //
+    // C'est la vraie cause des fiches enregistrees 2 ou 3 fois : le POS
+    // abandonne un appel trop long et affiche « reessaie », mais abandonner ne
+    // l'annule pas cote serveur -- la fiche etait enregistree pendant que le
+    // vendeur voyait un echec.
+    if (cleEnvoi.current === null) {
+      cleEnvoi.current = `${utilisateur.id}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+
     try {
       setEnvoiEnCours(true);
       const resultats: TicketResponse[] = [];
@@ -696,6 +712,9 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         const reponse = await appelApi('/tickets', {
           method: 'POST',
           body: JSON.stringify({
+            // Une cle par ZONE : chaque zone donne sa propre fiche, elles ne
+            // doivent pas se confondre entre elles.
+            cle_idempotence: `${cleEnvoi.current}-${idZone}`,
             mises: lignesZone.map((l) => ({
               tirage_id: l.tirage.id,
               type_jeu_id: l.typeJeu.id,
@@ -705,7 +724,10 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
               montant: l.montant,
             })),
           }),
-        });
+          // Une fiche de plusieurs centaines de mises demande du temps au
+          // serveur. Abandonner au bout de 15 secondes faisait reessayer le
+          // vendeur sur une fiche deja enregistree.
+        }, 60000);
 
         if (!reponse.ok) {
           const erreur = await reponse.json();
@@ -718,6 +740,10 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         resultats.push(await reponse.json());
       }
 
+      // Enregistree : la cle a fait son office, la suivante sera une AUTRE
+      // fiche. Sans cette remise a zero, revendre les memes boules renverrait
+      // la fiche precedente au lieu d'en creer une nouvelle.
+      cleEnvoi.current = null;
       setTickets(resultats);
     } catch (e: any) {
       alerteSimple('Attention', e.message ?? 'Impossible de creer le ticket.');

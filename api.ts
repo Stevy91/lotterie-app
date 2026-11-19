@@ -45,7 +45,15 @@ async function verifierSession(reponse: Response): Promise<void> {
   }
 }
 
-export async function appelApi(chemin: string, options: RequestInit = {}): Promise<Response> {
+export async function appelApi(
+  chemin: string,
+  options: RequestInit = {},
+  // Certains appels meritent plus que le delai par defaut : enregistrer une
+  // fiche de plusieurs centaines de mises prend du temps au serveur, et
+  // abandonner trop tot faisait reessayer le vendeur alors que la fiche etait
+  // deja enregistree.
+  delaiMs?: number,
+): Promise<Response> {
   const token = await obtenirToken();
 
   const reponse = await fetchAvecTimeout(`${API_URL}${chemin}`, {
@@ -56,7 +64,7 @@ export async function appelApi(chemin: string, options: RequestInit = {}): Promi
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
-  });
+  }, delaiMs);
 
   if (reponse.ok) {
     // Reponse valide : la session est bien active, on re-arme la detection
