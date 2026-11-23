@@ -183,9 +183,19 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
         crees.push(await reponse.json());
       }
 
-      alerteSimple(
+      // Imprimer tout de suite : le client attend sa fiche au comptoir, et
+      // sans cette proposition il fallait sortir de l'ecran, retrouver la
+      // nouvelle fiche dans la liste, l'ouvrir, puis l'imprimer -- une par
+      // zone. On imprime les fiches REJOUEES, pas celle d'origine.
+      const numeros = crees.map((t) => t.numero_ticket).join(', ');
+      alerteConfirmation(
         crees.length > 1 ? `${crees.length} fiches rejouees` : 'Fiche rejouee',
-        `Nouvelle(s) fiche(s) : ${crees.map((t) => t.numero_ticket).join(', ')}`
+        `Nouvelle(s) fiche(s) : ${numeros}\n\nImprimer maintenant ?`,
+        () => {
+          void imprimerFiches(crees);
+        },
+        crees.length > 1 ? 'Imprimer les fiches' : 'Imprimer',
+        'Plus tard'
       );
     } catch (e: any) {
       alerteSimple('Attention', e.message ?? 'Impossible de rejouer cette fiche.');
@@ -194,21 +204,30 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
     }
   }
 
-  async function imprimer() {
-    if (!ticket) return;
+  /**
+   * Imprime une ou plusieurs fiches. Prend une liste plutot que la fiche
+   * affichee, pour servir aussi le rejeu : celui-ci cree une fiche par zone,
+   * et c'est celles-la qu'il faut sortir, pas celle qu'on regarde.
+   */
+  async function imprimerFiches(fiches: TicketResponse[]) {
+    if (fiches.length === 0) return;
+
+    // L'entete (vendeur, adresses) est la meme pour toutes : un rejeu part
+    // toujours du meme vendeur, sur le meme terminal.
+    const premiere = fiches[0];
 
     try {
       const config = await obtenirConfiguration();
-      const parent = ticket.agent?.parent?.name;
-      const vendeurNom = parent ? `${parent} ${ticket.agent?.name}` : (ticket.agent?.name ?? '');
+      const parent = premiere.agent?.parent?.name;
+      const vendeurNom = parent ? `${parent} ${premiere.agent?.name}` : (premiere.agent?.name ?? '');
       // Le numero de serie de CET appareil (celui qui reimprime maintenant),
       // pas celui du createur d'origine de la fiche.
-      const numeroSeriePos = (await obtenirNumeroSeriePosStocke()) ?? String(ticket.agent?.id ?? '');
+      const numeroSeriePos = (await obtenirNumeroSeriePosStocke()) ?? String(premiere.agent?.id ?? '');
 
-      await imprimerFichesSunmi([ticket], {
+      await imprimerFichesSunmi(fiches, {
         nomCompagnie: config.app_name ?? 'Lotterie',
-        adresseAgent: ticket.agent?.adresse,
-        adresseProprietaire: ticket.agent?.proprietaire_adresse,
+        adresseAgent: premiere.agent?.adresse,
+        adresseProprietaire: premiere.agent?.proprietaire_adresse,
         telephoneAgent: utilisateur.telephone,
         telephoneProprietaire: utilisateur.proprietaire_telephone,
         posId: numeroSeriePos,
@@ -348,7 +367,7 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
           {([
             ...(gagne && !ticket.paye ? [['Payer', 'cash', '#16a34a', confirmerPaiement] as const] : []),
             ['Rejouer', 'refresh', '#2563eb', confirmerRejeu] as const,
-            ['Print fiche', 'print', '#e67e22', imprimer] as const,
+            ['Print fiche', 'print', '#e67e22', () => imprimerFiches([ticket])] as const,
             ...(peutSupprimer ? [['Supprimer', 'trash', '#dc2626', confirmerSuppression] as const] : []),
           ]).map(([libelle, icone, couleur, action]) => (
             <TouchableOpacity
