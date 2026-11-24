@@ -31,6 +31,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/abi-arm-seulement",
       "expo-secure-store",
       "@react-native-community/datetimepicker",
       [
