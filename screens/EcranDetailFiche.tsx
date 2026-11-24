@@ -101,7 +101,16 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
     return ticket.mises
       .filter((m) => !m.mariage_bonus)
       .filter((m) => {
-        const cle = `${m.type_jeu.id}|${m.numero}|${m.numero_2 ?? ''}|${m.montant}`;
+        // L'option fait partie de l'identite de la mise : « Lo4 1234 (1) » et
+        // « Lo4 1234 (2) » sont deux paris differents, au meme montant. Sans
+        // elle dans la cle, le dedoublonnage en supprimait un.
+        const cle = [
+          m.type_jeu.id,
+          m.numero,
+          m.numero_2 ?? '',
+          m.option_combinaison ?? '',
+          m.montant,
+        ].join('|');
         if (vues.has(cle)) return false;
         vues.add(cle);
         return true;
@@ -110,6 +119,10 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
         type_jeu_id: m.type_jeu.id,
         numero: m.numero,
         numero_2: m.numero_2,
+        // Oubliee ici, l'option disparaissait de la fiche rejouee : l'original
+        // imprimait « Lo4 1234(1) », le rejeu « Lo4 1234 ». Le client payait
+        // le meme prix pour un autre pari.
+        option_combinaison: m.option_combinaison,
         montant: Number(m.montant),
       }));
   }
