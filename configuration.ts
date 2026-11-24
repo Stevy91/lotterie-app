@@ -9,10 +9,20 @@ export interface ConfigurationApp {
   [cle: string]: string | undefined;
 }
 
-/** Duree de validite du cache. Un reglage change au backoffice met au plus
- *  ce temps a arriver sur les terminaux, ce qui est sans consequence pour du
- *  branding (nom, logo, texte de fiche). */
-const DUREE_CACHE_MS = 5 * 60 * 1000;
+/**
+ * Duree de validite du cache : volontairement courte.
+ *
+ * Cette route porte deja un en-tete « no-store », ajoute parce que des proxys
+ * d'operateurs mobiles servaient une reponse perimee et faisaient imprimer un
+ * app_name ou un text_fiche en retard sur le backoffice (voir routes/api.php).
+ * Ce probleme a deja ete vu sur le terrain : on ne le recree pas pour
+ * economiser quelques kilo-octets.
+ *
+ * Une minute suffit pour l'objectif reel, qui est de supprimer l'aller-retour
+ * reseau AVANT chaque impression pendant une serie de fiches. Un reglage
+ * change au backoffice arrive sur les terminaux dans la minute.
+ */
+const DUREE_CACHE_MS = 60 * 1000;
 
 /**
  * Derniere configuration recue.
