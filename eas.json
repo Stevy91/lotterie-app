@@ -14,7 +14,13 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        // Un APK universel embarque le moteur natif QUATRE fois, une par
+        // architecture. x86 et x86_64 ne servent qu'aux emulateurs : aucun
+        // terminal de vente n'en a. On ne garde que les deux ARM, ce qui
+        // laisse UN seul fichier a distribuer, compatible avec tous les POS,
+        // 32 comme 64 bits.
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a"
       }
     },
     "production": {

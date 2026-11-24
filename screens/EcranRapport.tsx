@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import SelecteurDate from '../composants/SelecteurDate';
 import { alerteSimple } from '../alerte';
 import { appelApi } from '../api';

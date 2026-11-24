@@ -84,7 +84,25 @@ function formaterTelephone(tel?: string | null): string {
   return t.startsWith('+') ? t : `+509 ${t}`;
 }
 
+/**
+ * Dernier logo telecharge, garde en memoire pour la duree de la session.
+ *
+ * logoEnDataUri() recoit une URL distante : chaque appel RETELECHARGEAIT
+ * l'image complete depuis le serveur. Comme il est appele a chaque
+ * impression, un point de vente qui sort cent fiches dans la journee
+ * telechargeait cent fois le meme logo -- parfois plusieurs centaines de Ko
+ * a chaque fois, sur une connexion mobile payee au volume.
+ *
+ * La cle est l'URL : si le proprietaire televerse un nouveau logo, le nom du
+ * fichier change et le cache tombe tout seul.
+ */
+let logoEnCache: { url: string; dataUri: string | null } | null = null;
+
 async function logoEnDataUri(logoUrl: string): Promise<string | null> {
+  if (logoEnCache && logoEnCache.url === logoUrl) {
+    return logoEnCache.dataUri;
+  }
+
   try {
     // Les logos uploades par les proprietaires peuvent faire plusieurs
     // milliers de pixels de large : on les redimensionne a la largeur du
@@ -96,9 +114,14 @@ async function logoEnDataUri(logoUrl: string): Promise<string | null> {
       { base64: true, format: ImageManipulator.SaveFormat.PNG }
     );
     if (!resultat.base64) return null;
-    return `data:image/png;base64,${resultat.base64}`;
+
+    const dataUri = `data:image/png;base64,${resultat.base64}`;
+    logoEnCache = { url: logoUrl, dataUri };
+    return dataUri;
   } catch {
-    // Une erreur de logo (reseau, format...) ne doit jamais bloquer l'impression.
+    // Une erreur de logo (reseau, format...) ne doit jamais bloquer
+    // l'impression. On ne met PAS l'echec en cache : le reseau peut revenir,
+    // et la fiche suivante doit pouvoir sortir avec son logo.
     return null;
   }
 }
