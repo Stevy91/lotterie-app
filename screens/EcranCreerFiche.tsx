@@ -1343,7 +1343,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
             ]}
             onPress={() => toggleZone(t)}
           >
-            <Text style={styles.boutonCouleurTexte}>{t.loterie.nom}</Text>
+            <Text allowFontScaling={false} numberOfLines={1} style={styles.boutonCouleurTexte}>{t.loterie.nom}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -1368,7 +1368,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
               ]}
               onPress={() => selectionnerTypeJeu(tj)}
             >
-              <Text style={styles.boutonCouleurTexte}>{tj.nom}</Text>
+              <Text allowFontScaling={false} numberOfLines={1} style={styles.boutonCouleurTexte}>{tj.nom}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -1817,9 +1817,13 @@ const styles = StyleSheet.create({
   boutonCouleurTexte: {
     color: '#fff',
     fontWeight: '700',
-    // Taille explicite : sans elle, un terminal regle sur une grande police
-    // systeme agrandit le libelle jusqu'a le faire deborder de la pastille,
-    // qui a maintenant une hauteur fixe.
+    // Taille explicite, ET allowFontScaling={false} sur les deux libelles.
+    // fontSize seul ne suffit pas : React Native le multiplie par le reglage
+    // de taille de police du systeme. Un terminal en « grande police » aurait
+    // donc retrouve exactement le bug que la hauteur fixe vient de corriger,
+    // la pastille ne pouvant plus s'etirer. La place disponible est de 42
+    // points (54 de rangee moins 12 de rembourrage) pour une pastille qui en
+    // demande environ 40 : il n'y a pas de marge pour un agrandissement.
     fontSize: 14,
   },
   zoneSaisie: {
