@@ -136,6 +136,9 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
   const occupe = !!enCours || envoiEnCours || chargement;
 
   const [modalPaireVisible, setModalPaireVisible] = useState(false);
+  // Options de lots a verifier pour les lotto 4 generes automatiquement.
+  // Plusieurs a la fois : le meme numero est alors joue une fois par option.
+  const [optionsLotto, setOptionsLotto] = useState<number[]>([1]);
   const [montantPaireModal, setMontantPaireModal] = useState('');
   const refInputPaire = useRef<TextInput>(null);
 
@@ -452,8 +455,20 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     setTypeJeuSelectionne(typeJeu);
     if (typeJeu.generation_auto) {
       setMontantPaireModal('');
+      setOptionsLotto([1]);
       setModalPaireVisible(true);
     }
+  }
+
+  function basculerOptionLotto(option: number) {
+    setOptionsLotto((actuel) => {
+      // On ne descend jamais a zero option : generer des lignes sans option
+      // reviendrait a tout jouer en option 1 sans que le vendeur l'ait voulu.
+      if (actuel.includes(option)) {
+        return actuel.length === 1 ? actuel : actuel.filter((o) => o !== option);
+      }
+      return [...actuel, option].sort();
+    });
   }
 
   // Un bouton de generation automatique n'est qu'un declencheur ponctuel : une fois
@@ -494,10 +509,14 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
    * deux paris differents -- contrairement au mariage ou 12 x 54 est unique.
    */
   function nombreCombinaisonsLotto(typeJeu: TypeJeu): number {
-    return tirageSelectionnes.reduce((somme, tirage) => {
+    const paires = tirageSelectionnes.reduce((somme, tirage) => {
       const k = boulesCombinables(typeJeu, tirage.id).length;
       return somme + k * (k - 1);
     }, 0);
+
+    // Chaque option choisie rejoue la serie entiere : deux options, deux fois
+    // plus de lignes, et deux fois la mise.
+    return paires * (estJeuAOptions(typeJeu.nombre_chiffres) ? optionsLotto.length : 1);
   }
 
   function titreModalAuto(): string {
@@ -513,7 +532,11 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         return `Montant pour chaque lotto ${chiffres} (${combinaisons} combinaisons)`;
       }
 
-      return chiffres === 2 ? 'Montant pour les boules paires' : `Montant pour les boules lotto ${chiffres} auto`;
+      if (chiffres === 2) return 'Montant pour les boules paires';
+
+      // Boules identiques : 10 numeros, multiplies par les options cochees.
+      const lignes = 10 * (estJeuAOptions(chiffres) ? optionsLotto.length : 1);
+      return `Montant pour les boules lotto ${chiffres} auto (${lignes} lignes)`;
     }
     if (mode === 'marriage') return 'Montant pour chaque Marriage (combinaisons automatiques)';
     if (mode === 'reverse') return 'Montant pour chaque Reverse (numeros inverses des boules deja jouees)';
@@ -619,21 +642,33 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     // L'ordre compte, et c'est la difference avec le mariage : « 12 puis 54 »
     // donne 1254, « 54 puis 12 » donne 5412, deux numeros distincts qui
     // peuvent sortir separement. On genere donc les k x (k-1) paires ordonnees.
+
+    // Un lotto 4 ou 5 se joue sur une option de lots. Le vendeur peut en
+    // cocher plusieurs : la serie est alors generee une fois par option, car
+    // « 1254 option 1 » et « 1254 option 2 » sont deux paris distincts, qui
+    // se gagnent sur des lots differents. Vaut pour les combinaisons comme
+    // pour les boules identiques : sans ca, un L5 auto partait toujours en
+    // option 1 sans jamais le dire.
+    const options: Array<number | null> = estJeuAOptions(nombreChiffres) ? optionsLotto : [null];
+
     if (mode === 'paire') {
       const nouvellesLignes: Ligne[] = tirageSelectionnes.flatMap((tirage) => {
         const boules = boulesCombinables(typeJeuSelectionne, tirage.id);
         const combinaisons: Ligne[] = [];
 
-        for (let i = 0; i < boules.length; i++) {
-          for (let j = 0; j < boules.length; j++) {
-            if (i === j) continue; // une boule ne se combine pas avec elle-meme
-            combinaisons.push({
-              localId: `${Date.now()}-${tirage.id}-combi-${i}-${j}`,
-              tirage,
-              typeJeu: typeJeuSelectionne,
-              numero: boules[i] + boules[j],
-              montant: montantNombre,
-            });
+        for (const option of options) {
+          for (let i = 0; i < boules.length; i++) {
+            for (let j = 0; j < boules.length; j++) {
+              if (i === j) continue; // une boule ne se combine pas avec elle-meme
+              combinaisons.push({
+                localId: `${Date.now()}-${tirage.id}-combi-${option ?? 0}-${i}-${j}`,
+                tirage,
+                typeJeu: typeJeuSelectionne,
+                numero: boules[i] + boules[j],
+                optionCombinaison: option ?? undefined,
+                montant: montantNombre,
+              });
+            }
           }
         }
         return combinaisons;
@@ -665,13 +700,16 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     }
 
     const nouvellesLignes: Ligne[] = tirageSelectionnes.flatMap((tirage) =>
-      numeros.map((num, index) => ({
-        localId: `${Date.now()}-${tirage.id}-auto-${index}`,
-        tirage,
-        typeJeu: typeJeuSelectionne,
-        numero: num,
-        montant: montantNombre,
-      }))
+      options.flatMap((option) =>
+        numeros.map((num, index) => ({
+          localId: `${Date.now()}-${tirage.id}-auto-${option ?? 0}-${index}`,
+          tirage,
+          typeJeu: typeJeuSelectionne,
+          numero: num,
+          optionCombinaison: option ?? undefined,
+          montant: montantNombre,
+        }))
+      )
     );
 
     setLignes((prev) => [...prev, ...nouvellesLignes]);
@@ -1376,6 +1414,29 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         <View style={styles.fondModal}>
           <View style={styles.carteModal}>
             <Text style={styles.titreModal}>{titreModalAuto()}</Text>
+
+            {/* Options de lots du lotto 4 / 5. Sans ce choix, tout partait en
+                option 1 sans que le vendeur le sache. Plusieurs options
+                cochees rejouent la serie entiere pour chacune. */}
+            {typeJeuSelectionne && estJeuAOptions(typeJeuSelectionne.nombre_chiffres) && (
+              <View style={styles.rangeeOptions}>
+                {[1, 2, 3].map((option) => {
+                  const actif = optionsLotto.includes(option);
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[styles.puceOption, actif && styles.puceOptionActive]}
+                      onPress={() => basculerOptionLotto(option)}
+                    >
+                      <Text style={[styles.puceOptionTexte, actif && styles.puceOptionTexteActif]}>
+                        Option {option}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+
             <TextInput
               ref={refInputPaire}
               style={styles.champInput}
@@ -1580,6 +1641,31 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
+  },
+  rangeeOptions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  puceOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+  },
+  puceOptionActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  puceOptionTexte: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4b5563',
+  },
+  puceOptionTexteActif: {
+    color: '#fff',
   },
   badgeIconeZone: {
     borderRadius: 14,
