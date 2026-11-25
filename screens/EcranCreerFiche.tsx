@@ -221,21 +221,40 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       return;
     }
 
+    alerteConfirmation('Retirer tirage', 'Es-tu sur ? retirer ce tirage ?', () => {
+      // On desactive juste la zone pour les prochaines saisies : les numeros
+      // deja joues restent affiches dans la liste. Deselectionner n'est pas
+      // supprimer -- pour effacer les boules, il y a la corbeille du bandeau
+      // de la zone (voir supprimerZone).
+      setTirageSelectionnes((prev) => prev.filter((t) => t.id !== tirage.id));
+    });
+  }
+
+  /**
+   * Corbeille du bandeau d'une zone : la zone part AVEC ses boules.
+   *
+   * A distinguer du bouton de zone du selecteur, qui ne fait que la
+   * deselectionner pour les prochaines saisies. Une fois les lignes
+   * supprimees et la zone deselectionnee, elle disparait de l'ecran, puisque
+   * zonesAffichees ne garde que les zones selectionnees ou qui ont des lignes.
+   */
+  function supprimerZone(tirage: Tirage) {
     const nb = lignes.filter((l) => l.tirage.id === tirage.id).length;
 
-    // La zone part AVEC ses lignes. Avant, elle etait seulement desactivee
-    // pour les prochaines saisies et ses numeros restaient affiches : le
-    // vendeur devait ensuite les supprimer un par un, et la zone continuait
-    // d'apparaitre a l'ecran (zonesAffichees garde les zones qui ont des
-    // lignes). Le message annonce le nombre de lignes, parce que la meme
-    // fonction sert aussi au bouton de la zone dans le selecteur du bas.
+    const retirer = () => {
+      setTirageSelectionnes((prev) => prev.filter((t) => t.id !== tirage.id));
+      setLignes((prev) => prev.filter((l) => l.tirage.id !== tirage.id));
+    };
+
+    if (nb === 0) {
+      retirer();
+      return;
+    }
+
     alerteConfirmation(
-      'Retirer la zone',
-      `Retirer ${tirage.loterie.nom} et supprimer ses ${nb} ligne(s) deja saisie(s) ?`,
-      () => {
-        setTirageSelectionnes((prev) => prev.filter((t) => t.id !== tirage.id));
-        setLignes((prev) => prev.filter((l) => l.tirage.id !== tirage.id));
-      },
+      'Supprimer la zone',
+      `Supprimer ${tirage.loterie.nom} et ses ${nb} ligne(s) deja saisie(s) ?`,
+      retirer,
       'Oui'
     );
   }
@@ -1233,7 +1252,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
               <View key={zone.id}>
                 <View style={styles.bandeauLoterie}>
                   <TouchableOpacity
-                    onPress={() => toggleZone(zone)}
+                    onPress={() => supprimerZone(zone)}
                     hitSlop={ZONE_TOUCHE}
                     style={[styles.badgeIconeZone, styles.badgeSupprimerZone]}
                   >
