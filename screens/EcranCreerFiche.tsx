@@ -1791,6 +1791,17 @@ const styles = StyleSheet.create({
   },
   rangeeBoutons: {
     flexGrow: 0,
+    // Hauteur FIXE, et interdiction de retrecir. Sans ca, sur un petit ecran
+    // avec le clavier ouvert, la colonne manque de place et Yoga comprime
+    // cette rangee : les pastilles perdent une quinzaine de pixels et leur
+    // libelle se retrouve coupe. Vu sur un iPos Q2 -- les pastilles
+    // s'affichaient vides, de simples rectangles de couleur, alors que le
+    // meme ecran clavier ferme les affichait correctement.
+    //
+    // C'est la liste des boules (zoneListe, flex: 1) qui doit absorber le
+    // manque de place, pas les boutons : elle, au moins, defile.
+    flexShrink: 0,
+    height: 54,
     paddingVertical: 6,
   },
   boutonCouleur: {
@@ -1806,6 +1817,10 @@ const styles = StyleSheet.create({
   boutonCouleurTexte: {
     color: '#fff',
     fontWeight: '700',
+    // Taille explicite : sans elle, un terminal regle sur une grande police
+    // systeme agrandit le libelle jusqu'a le faire deborder de la pastille,
+    // qui a maintenant une hauteur fixe.
+    fontSize: 14,
   },
   zoneSaisie: {
     flexDirection: 'row',
