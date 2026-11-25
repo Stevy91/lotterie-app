@@ -445,10 +445,54 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
     setTypeJeuSelectionne(null);
   }
 
+  /**
+   * Les boules simples qui peuvent alimenter un Lotto de n chiffres : deux
+   * boules de n/2 chiffres mises bout a bout. Un Lo4 se fabrique avec deux
+   * boules de 2 chiffres, un Lo6 avec deux boules de 3.
+   *
+   * Renvoie une liste vide quand le jeu ne s'y prete pas -- nombre impair
+   * (Lo3, Lo5, Lo7), ou BPaire dont la moitie ferait un seul chiffre.
+   */
+  function boulesCombinables(typeJeu: TypeJeu, tirageId: number): string[] {
+    const n = typeJeu.nombre_chiffres;
+    if (n % 2 !== 0 || n < 4) return [];
+
+    const moitie = n / 2;
+    return Array.from(
+      new Set(
+        lignes
+          .filter((l) => l.tirage.id === tirageId && !l.numero2 && l.numero.length === moitie)
+          .map((l) => l.numero)
+      )
+    );
+  }
+
+  /**
+   * Combien de Lotto le bouton fabriquerait maintenant, toutes zones
+   * selectionnees confondues. k boules donnent k x (k-1) numeros : l'ordre
+   * compte, « 12 puis 54 » fait 1254 et « 54 puis 12 » fait 5412, qui sont
+   * deux paris differents -- contrairement au mariage ou 12 x 54 est unique.
+   */
+  function nombreCombinaisonsLotto(typeJeu: TypeJeu): number {
+    return tirageSelectionnes.reduce((somme, tirage) => {
+      const k = boulesCombinables(typeJeu, tirage.id).length;
+      return somme + k * (k - 1);
+    }, 0);
+  }
+
   function titreModalAuto(): string {
     const mode = typeJeuSelectionne?.generation_auto;
     if (mode === 'paire') {
       const chiffres = typeJeuSelectionne?.nombre_chiffres ?? 2;
+
+      // Annoncer le nombre avant de demander le montant : avec dix boules
+      // jouees, un seul appui fabrique quatre-vingt-dix lignes. Le vendeur
+      // doit le savoir avant de taper une somme, pas apres.
+      const combinaisons = typeJeuSelectionne ? nombreCombinaisonsLotto(typeJeuSelectionne) : 0;
+      if (combinaisons > 0) {
+        return `Montant pour chaque lotto ${chiffres} (${combinaisons} combinaisons)`;
+      }
+
       return chiffres === 2 ? 'Montant pour les boules paires' : `Montant pour les boules lotto ${chiffres} auto`;
     }
     if (mode === 'marriage') return 'Montant pour chaque Marriage (combinaisons automatiques)';
@@ -546,6 +590,42 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       setLignes((prev) => [...prev, ...nouvellesLignes]);
       fermerModalAuto();
       return;
+    }
+
+    // Lotto auto, premier cas : des boules simples sont deja jouees dans la
+    // zone. Le bouton fabrique alors tous les lotto possibles avec elles,
+    // comme le mariage auto, au lieu des boules identiques.
+    //
+    // L'ordre compte, et c'est la difference avec le mariage : « 12 puis 54 »
+    // donne 1254, « 54 puis 12 » donne 5412, deux numeros distincts qui
+    // peuvent sortir separement. On genere donc les k x (k-1) paires ordonnees.
+    if (mode === 'paire') {
+      const nouvellesLignes: Ligne[] = tirageSelectionnes.flatMap((tirage) => {
+        const boules = boulesCombinables(typeJeuSelectionne, tirage.id);
+        const combinaisons: Ligne[] = [];
+
+        for (let i = 0; i < boules.length; i++) {
+          for (let j = 0; j < boules.length; j++) {
+            if (i === j) continue; // une boule ne se combine pas avec elle-meme
+            combinaisons.push({
+              localId: `${Date.now()}-${tirage.id}-combi-${i}-${j}`,
+              tirage,
+              typeJeu: typeJeuSelectionne,
+              numero: boules[i] + boules[j],
+              montant: montantNombre,
+            });
+          }
+        }
+        return combinaisons;
+      });
+
+      // Aucune boule simple exploitable : on retombe sur les boules
+      // identiques (0000, 1111... 9999), le comportement d'origine du bouton.
+      if (nouvellesLignes.length > 0) {
+        setLignes((prev) => [...prev, ...nouvellesLignes]);
+        fermerModalAuto();
+        return;
+      }
     }
 
     const finParChiffre = mode?.match(/^p(\d)$/);
