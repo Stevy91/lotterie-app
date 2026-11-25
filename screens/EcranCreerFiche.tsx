@@ -34,6 +34,17 @@ interface Props {
 const DEVISE = 'HTG';
 const COULEURS_JEUX = ['#0d9488', '#2563eb', '#7c3aed', '#dc2626', '#16a34a', '#f59e0b'];
 
+/**
+ * Marge de clic autour des petites icones corbeille et crayon.
+ *
+ * Ces icones font 15 a 19 points : bien trop peu pour un doigt, et les
+ * vendeurs rataient la corbeille d'une ligne. hitSlop agrandit la zone
+ * sensible SANS changer la mise en page -- augmenter le padding aurait
+ * espace les lignes et reduit le nombre de boules visibles a l'ecran, ce
+ * qui aurait coute plus que ca ne rapporte sur un ecran de POS.
+ */
+const ZONE_TOUCHE = { top: 14, bottom: 14, left: 14, right: 14 };
+
 // Couleur d'un bouton de type de jeu : Lotto (3-7 chiffres) tous en ROUGE,
 // Pointe (P0-P9) tous en VERT (le meme vert que la zone selectionnee), le reste
 // garde une couleur de la palette selon son index.
@@ -204,11 +215,23 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       return;
     }
 
-    alerteConfirmation('Retirer tirage', 'Es-tu sur ? retirer ce tirage ?', () => {
-      // On desactive juste la zone pour les prochaines saisies : les numeros
-      // deja joues restent affiches dans la liste (rien n'est supprime).
-      setTirageSelectionnes((prev) => prev.filter((t) => t.id !== tirage.id));
-    });
+    const nb = lignes.filter((l) => l.tirage.id === tirage.id).length;
+
+    // La zone part AVEC ses lignes. Avant, elle etait seulement desactivee
+    // pour les prochaines saisies et ses numeros restaient affiches : le
+    // vendeur devait ensuite les supprimer un par un, et la zone continuait
+    // d'apparaitre a l'ecran (zonesAffichees garde les zones qui ont des
+    // lignes). Le message annonce le nombre de lignes, parce que la meme
+    // fonction sert aussi au bouton de la zone dans le selecteur du bas.
+    alerteConfirmation(
+      'Retirer la zone',
+      `Retirer ${tirage.loterie.nom} et supprimer ses ${nb} ligne(s) deja saisie(s) ?`,
+      () => {
+        setTirageSelectionnes((prev) => prev.filter((t) => t.id !== tirage.id));
+        setLignes((prev) => prev.filter((l) => l.tirage.id !== tirage.id));
+      },
+      'Oui'
+    );
   }
 
   function ajouterLigne() {
@@ -1071,14 +1094,19 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
             return (
               <View key={zone.id}>
                 <View style={styles.bandeauLoterie}>
-                  <TouchableOpacity onPress={() => toggleZone(zone)} style={[styles.badgeIconeZone, styles.badgeSupprimerZone]}>
-                    <Ionicons name="trash" size={12} color="#fff" />
+                  <TouchableOpacity
+                    onPress={() => toggleZone(zone)}
+                    hitSlop={ZONE_TOUCHE}
+                    style={[styles.badgeIconeZone, styles.badgeSupprimerZone]}
+                  >
+                    <Ionicons name="trash" size={15} color="#fff" />
                   </TouchableOpacity>
                   <Text style={styles.bandeauLoterieTexte}>
                     {zone.loterie.nom} {'=>'} {totalZone.toFixed(2)} {DEVISE}
                   </Text>
                   <TouchableOpacity
                     style={[styles.badgeIconeZone, styles.badgeEditerZone]}
+                    hitSlop={ZONE_TOUCHE}
                     onPress={() => {
                       if (lignesZone.length === 0) {
                         alerteSimple('Zone vide', 'Aucune ligne a modifier pour cette zone.');
@@ -1088,7 +1116,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
                       setMontantEditionZone('');
                     }}
                   >
-                    <Ionicons name="pencil" size={12} color="#fff" />
+                    <Ionicons name="pencil" size={15} color="#fff" />
                   </TouchableOpacity>
                 </View>
 
@@ -1098,8 +1126,11 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
                   regrouperParLabel(lignesZone).map((groupe) => (
                     <View key={groupe.label}>
                       <View style={styles.bandeauGroupe}>
-                        <TouchableOpacity onPress={() => confirmerSuppressionGroupe(zone.id, groupe.label)}>
-                          <Ionicons name="trash" size={15} color="#e74c3c" />
+                        <TouchableOpacity
+                          onPress={() => confirmerSuppressionGroupe(zone.id, groupe.label)}
+                          hitSlop={ZONE_TOUCHE}
+                        >
+                          <Ionicons name="trash" size={19} color="#e74c3c" />
                         </TouchableOpacity>
                         <Text style={styles.bandeauGroupeTexte}>
                           {groupe.label} {'=>'} {groupe.total.toFixed(2)} {DEVISE}
@@ -1111,8 +1142,8 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
 
                       {groupe.lignes.map((l) => (
                         <View key={l.localId} style={styles.ligneJouee}>
-                          <TouchableOpacity onPress={() => supprimerLigne(l.localId)}>
-                            <Ionicons name="trash" size={15} color="#e74c3c" />
+                          <TouchableOpacity onPress={() => supprimerLigne(l.localId)} hitSlop={ZONE_TOUCHE}>
+                            <Ionicons name="trash" size={19} color="#e74c3c" />
                           </TouchableOpacity>
                           <Text style={styles.ligneJoueeLabel}>{groupe.label}</Text>
                           <View style={styles.ligneJoueeNumeroConteneur}>
@@ -1448,9 +1479,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   badgeIconeZone: {
-    borderRadius: 11,
-    width: 22,
-    height: 22,
+    borderRadius: 14,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
