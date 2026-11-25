@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -111,6 +112,8 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
   const [numero2, setNumero2] = useState('');
   const [montant, setMontant] = useState('');
   const [lignes, setLignes] = useState<Ligne[]>([]);
+  // Pilote l'affichage de la rangee des types de jeu (voir le useEffect plus bas).
+  const [clavierOuvert, setClavierOuvert] = useState(false);
 
   // Case Boule cochee = « joue aussi l'inverse » : 2 chiffres -> le numero + son
   // reverse ; 4 chiffres -> le Lotto 4 et sa moitie inversee (1234 et 3412).
@@ -427,6 +430,23 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       appliquer();
     }
   }
+
+  /**
+   * La rangee des types de jeu ne s'affiche que clavier ouvert.
+   *
+   * Elle prend une rangee entiere en permanence, alors qu'elle ne sert qu'au
+   * moment de la saisie. Repliee, l'ecran du POS montre nettement plus de
+   * boules deja jouees -- ce qui compte quand le vendeur relit une fiche
+   * devant le client. Toucher le champ Boule la fait reapparaitre.
+   */
+  useEffect(() => {
+    const ouvert = Keyboard.addListener('keyboardDidShow', () => setClavierOuvert(true));
+    const ferme = Keyboard.addListener('keyboardDidHide', () => setClavierOuvert(false));
+    return () => {
+      ouvert.remove();
+      ferme.remove();
+    };
+  }, []);
 
   function selectionnerTypeJeu(typeJeu: TypeJeu) {
     setTypeJeuSelectionne(typeJeu);
@@ -1271,21 +1291,24 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         ))}
       </ScrollView>
 
-      {/* Boutons types de jeu */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rangeeBoutons} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
-        {typesJeux.filter((tj) => tj.visible_bouton).map((tj, index) => (
-          <TouchableOpacity
-            key={tj.id}
-            style={[
-              styles.boutonCouleur,
-              { backgroundColor: couleurBoutonJeu(tj, index) },
-            ]}
-            onPress={() => selectionnerTypeJeu(tj)}
-          >
-            <Text style={styles.boutonCouleurTexte}>{tj.nom}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* Boutons types de jeu : clavier ouvert seulement, pour rendre la place
+          a la liste des boules le reste du temps. */}
+      {clavierOuvert && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rangeeBoutons} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
+          {typesJeux.filter((tj) => tj.visible_bouton).map((tj, index) => (
+            <TouchableOpacity
+              key={tj.id}
+              style={[
+                styles.boutonCouleur,
+                { backgroundColor: couleurBoutonJeu(tj, index) },
+              ]}
+              onPress={() => selectionnerTypeJeu(tj)}
+            >
+              <Text style={styles.boutonCouleurTexte}>{tj.nom}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Saisie Boule / Mise : toujours visible, meme sans aucun type de jeu selectionne.
           Le 2e champ n'apparait que pour une combinaison saisie a la main (pas pour MA Auto). */}
