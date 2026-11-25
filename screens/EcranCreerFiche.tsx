@@ -1221,7 +1221,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.zoneListe}>
+      <ScrollView style={styles.zoneListe} keyboardShouldPersistTaps="handled">
         {zonesAffichees.length === 0 ? (
           <Text style={styles.listeVide}>Selectionne au moins une loterie.</Text>
         ) : (
@@ -1314,7 +1314,7 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       </View>
 
       {/* Boutons loteries (selection multiple) */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rangeeBoutons} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
+      <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} style={styles.rangeeBoutons} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
         {tirages.map((t, index) => (
           <TouchableOpacity
             key={t.id}
@@ -1330,9 +1330,16 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       </ScrollView>
 
       {/* Boutons types de jeu : clavier ouvert seulement, pour rendre la place
-          a la liste des boules le reste du temps. */}
+          a la liste des boules le reste du temps.
+
+          keyboardShouldPersistTaps est indispensable ici, pas decoratif : par
+          defaut un ScrollView AVALE le premier appui quand le clavier est
+          ouvert, pour ne fermer que le clavier. Tant que la rangee restait
+          affichee en permanence, le deuxieme appui passait et personne ne le
+          remarquait. Depuis qu'elle disparait avec le clavier, il n'y a plus
+          de deuxieme appui : les boutons auto ne repondaient plus du tout. */}
       {clavierOuvert && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rangeeBoutons} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
+        <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} style={styles.rangeeBoutons} contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}>
           {typesJeux.filter((tj) => tj.visible_bouton).map((tj, index) => (
             <TouchableOpacity
               key={tj.id}
