@@ -10,6 +10,7 @@ import EcranCompte from './EcranCompte';
 import EcranImprimante from './EcranImprimante';
 import EcranNumeroGagnant from './EcranNumeroGagnant';
 import EcranTirageDisponible from './EcranTirageDisponible';
+import { usePaddingEntete } from './enteteEcran';
 
 interface Props {
   utilisateur: Utilisateur;
@@ -21,6 +22,7 @@ function bientotDisponible(fonctionnalite: string) {
 }
 
 export default function EcranParametre({ utilisateur, onDeconnecter }: Props) {
+  const paddingEntete = usePaddingEntete();
   const [configuration, setConfiguration] = useState<Record<string, string>>({});
   const [sousEcran, setSousEcran] = useState<'accueil' | 'compte' | 'tirages' | 'numeros-gagnants' | 'commission' | 'imprimante'>('accueil');
   const [logoUrl, setLogoUrl] = useState<string | null>(utilisateur.logo_url);
@@ -103,7 +105,7 @@ export default function EcranParametre({ utilisateur, onDeconnecter }: Props) {
   }
 
   return (
-    <ScrollView style={styles.conteneur} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView style={[styles.conteneur, paddingEntete]} contentContainerStyle={{ paddingBottom: 40 }}>
       <Text style={styles.titre}>Parametre</Text>
 
       <View style={styles.grille}>
@@ -197,7 +199,6 @@ const styles = StyleSheet.create({
   conteneur: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 50,
     paddingHorizontal: 16,
   },
   titre: {

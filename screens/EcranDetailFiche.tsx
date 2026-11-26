@@ -9,6 +9,7 @@ import { obtenirNumeroSeriePosStocke, Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
 import { abregerMise, imprimerFichesSunmi } from '../sunmiPrint';
 import { Tirage, TicketResponse } from '../types';
+import { TOUCHE_RETOUR, usePaddingEntete } from './enteteEcran';
 
 interface Props {
   ticketId: number;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Props) {
+  const paddingEntete = usePaddingEntete();
   // Marge basse : evite que le dernier bouton passe sous la barre de navigation.
   const insets = useSafeAreaInsets();
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
@@ -299,8 +301,8 @@ export default function EcranDetailFiche({ ticketId, utilisateur, onRetour }: Pr
 
   return (
     <View style={styles.conteneur}>
-      <View style={styles.entete}>
-        <TouchableOpacity onPress={onRetour} style={styles.iconeRetour}>
+      <View style={[styles.entete, paddingEntete]}>
+        <TouchableOpacity hitSlop={TOUCHE_RETOUR} onPress={onRetour} style={styles.iconeRetour}>
           <Ionicons name="arrow-back" size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.titre}>{ticket.numero_ticket}</Text>
@@ -592,7 +594,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
     paddingBottom: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,

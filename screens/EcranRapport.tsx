@@ -9,6 +9,7 @@ import { obtenirConfiguration } from '../configuration';
 import { imprimerRapportSunmi, LigneRapport } from '../sunmiPrint';
 import { Loterie } from '../types';
 import EcranCompte from './EcranCompte';
+import { TOUCHE_RETOUR, usePaddingEntete } from './enteteEcran';
 
 interface Props {
   utilisateur: Utilisateur;
@@ -77,6 +78,7 @@ function formaterDateAffichage(date: Date): string {
 }
 
 export default function EcranRapport({ utilisateur, onRetour }: Props) {
+  const paddingEntete = usePaddingEntete();
   const [rapportActif, setRapportActif] = useState<'fin_tirage' | 'partiel' | 'f_gagnant' | null>(null);
   const [dateDebut, setDateDebut] = useState(new Date());
   const [dateFin, setDateFin] = useState(new Date());
@@ -274,8 +276,8 @@ export default function EcranRapport({ utilisateur, onRetour }: Props) {
 
   return (
     <View style={styles.conteneur}>
-      <View style={styles.entete}>
-        <TouchableOpacity onPress={onRetour} style={styles.iconeRetour}>
+      <View style={[styles.entete, paddingEntete]}>
+        <TouchableOpacity hitSlop={TOUCHE_RETOUR} onPress={onRetour} style={styles.iconeRetour}>
           <Ionicons name="arrow-back" size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.titre}>Rapport</Text>
@@ -460,7 +462,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
     paddingBottom: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,

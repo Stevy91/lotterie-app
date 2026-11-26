@@ -26,6 +26,7 @@ import { obtenirConfiguration } from '../configuration';
 import { Ligne, Tirage, TypeJeu, TicketResponse } from '../types';
 import { genererRecuHtml } from '../receipt';
 import { imprimerFichesSunmi } from '../sunmiPrint';
+import { TOUCHE_RETOUR, usePaddingEntete } from './enteteEcran';
 
 interface Props {
   utilisateur: Utilisateur;
@@ -100,6 +101,7 @@ function nettoyerMontant(texte: string): string {
 }
 
 export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
+  const paddingEntete = usePaddingEntete();
   // Marge basse : sur les POS avec barre de navigation logicielle (Sunmi V2s),
   // le dernier bouton du recu passait dessous et devenait inaccessible.
   const insets = useSafeAreaInsets();
@@ -1194,8 +1196,8 @@ export default function EcranCreerFiche({ utilisateur, onRetour }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Barre du haut */}
-      <View style={styles.barreHaut}>
-        <TouchableOpacity onPress={onRetour} style={styles.iconeBarre} activeOpacity={0.7}>
+      <View style={[styles.barreHaut, paddingEntete]}>
+        <TouchableOpacity hitSlop={TOUCHE_RETOUR} onPress={onRetour} style={styles.iconeBarre} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         {/* Les quatre icones partagent le meme verrou : pendant qu'une fiche
@@ -1618,7 +1620,6 @@ const styles = StyleSheet.create({
   },
   barreHaut: {
     backgroundColor: '#6c5ce7',
-    paddingTop: 50,
     paddingBottom: 16,
     paddingHorizontal: 16,
     flexDirection: 'row',

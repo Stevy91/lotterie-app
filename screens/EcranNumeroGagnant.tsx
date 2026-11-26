@@ -5,6 +5,7 @@ import SelecteurDate from '../composants/SelecteurDate';
 import { alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { Tirage } from '../types';
+import { TOUCHE_RETOUR, usePaddingEntete } from './enteteEcran';
 
 interface Props {
   onRetour: () => void;
@@ -41,6 +42,7 @@ function separerNomEtMoment(nom: string): { base: string; moment: string } {
 }
 
 export default function EcranNumeroGagnant({ onRetour }: Props) {
+  const paddingEntete = usePaddingEntete();
   const [tirages, setTirages] = useState<Tirage[]>([]);
   const [chargement, setChargement] = useState(true);
   const [date, setDate] = useState(new Date());
@@ -85,8 +87,8 @@ export default function EcranNumeroGagnant({ onRetour }: Props) {
 
   return (
     <View style={styles.conteneur}>
-      <View style={styles.entete}>
-        <TouchableOpacity onPress={onRetour} style={styles.iconeRetour}>
+      <View style={[styles.entete, paddingEntete]}>
+        <TouchableOpacity hitSlop={TOUCHE_RETOUR} onPress={onRetour} style={styles.iconeRetour}>
           <Ionicons name="arrow-back" size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.titre}>Tirage</Text>
@@ -170,7 +172,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
     paddingBottom: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,

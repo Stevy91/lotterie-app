@@ -7,6 +7,7 @@ import { alerteSimple } from '../alerte';
 import { autoriserBluetooth, definirImprimanteChoisie, obtenirImprimanteChoisie } from '../imprimante';
 import BluetoothPrinter, { AppareilBluetooth } from '../modules/bluetooth-printer';
 import { obtenirPilote, reinitialiserPilote } from '../pilotes/pilote';
+import { TOUCHE_RETOUR, usePaddingEntete } from './enteteEcran';
 
 interface Props {
   onRetour: () => void;
@@ -27,6 +28,7 @@ interface Props {
  * ecran que le systeme fait deja bien.
  */
 export default function EcranImprimante({ onRetour }: Props) {
+  const paddingEntete = usePaddingEntete();
   const [appareils, setAppareils] = useState<AppareilBluetooth[]>([]);
   const [choisie, setChoisie] = useState<string | null>(null);
   const [chargement, setChargement] = useState(true);
@@ -96,8 +98,8 @@ export default function EcranImprimante({ onRetour }: Props) {
 
   return (
     <View style={styles.conteneur}>
-      <View style={styles.entete}>
-        <TouchableOpacity onPress={onRetour} style={styles.iconeRetour}>
+      <View style={[styles.entete, paddingEntete]}>
+        <TouchableOpacity hitSlop={TOUCHE_RETOUR} onPress={onRetour} style={styles.iconeRetour}>
           <Ionicons name="arrow-back" size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.titre}>Imprimante</Text>
@@ -207,7 +209,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  iconeRetour: { padding: 4 },
+  iconeRetour: { padding: 8 },
   titre: { fontSize: 17, fontWeight: '700', color: '#111827' },
   explication: { fontSize: 13, color: '#6b7280', lineHeight: 19, marginBottom: 16 },
   carte: {

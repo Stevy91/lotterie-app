@@ -20,6 +20,7 @@ import { obtenirNumeroSeriePosStocke, Utilisateur } from '../auth';
 import { obtenirConfiguration } from '../configuration';
 import { imprimerFichesSunmi } from '../sunmiPrint';
 import { TicketResponse } from '../types';
+import { TOUCHE_RETOUR, usePaddingEntete } from './enteteEcran';
 
 interface Props {
   titre: string;
@@ -52,6 +53,7 @@ function formaterDateHeure(iso: string): string {
 }
 
 export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, onRetour }: Props) {
+  const paddingEntete = usePaddingEntete();
   // Marge basse : evite que la derniere ligne passe sous la barre de navigation.
   const insets = useSafeAreaInsets();
   const [tickets, setTickets] = useState<TicketResponse[]>([]);
@@ -172,8 +174,8 @@ export default function EcranListeFiches({ filtre: filtreInitial, utilisateur, o
 
   return (
     <View style={styles.conteneur}>
-      <View style={styles.entete}>
-        <TouchableOpacity onPress={onRetour} style={styles.iconeRetour}>
+      <View style={[styles.entete, paddingEntete]}>
+        <TouchableOpacity hitSlop={TOUCHE_RETOUR} onPress={onRetour} style={styles.iconeRetour}>
           <Ionicons name="arrow-back" size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.titre}>{filtre === 'gagnantes' ? 'Fiches Gagnants' : 'Fiches'}</Text>
@@ -279,7 +281,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
     paddingBottom: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,

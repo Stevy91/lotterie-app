@@ -5,6 +5,7 @@ import SelecteurDate from '../composants/SelecteurDate';
 import { alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { Utilisateur } from '../auth';
+import { TOUCHE_RETOUR, usePaddingEntete } from './enteteEcran';
 
 interface Props {
   utilisateur: Utilisateur;
@@ -22,6 +23,7 @@ function versDateApi(date: Date): string {
 }
 
 export default function EcranCommission({ utilisateur, onRetour }: Props) {
+  const paddingEntete = usePaddingEntete();
   const [dateDebut, setDateDebut] = useState(new Date());
   const [dateFin, setDateFin] = useState(new Date());
   const [chargement, setChargement] = useState(true);
@@ -54,8 +56,8 @@ export default function EcranCommission({ utilisateur, onRetour }: Props) {
 
   return (
     <View style={styles.conteneur}>
-      <View style={styles.entete}>
-        <TouchableOpacity onPress={onRetour} style={styles.iconeRetour}>
+      <View style={[styles.entete, paddingEntete]}>
+        <TouchableOpacity hitSlop={TOUCHE_RETOUR} onPress={onRetour} style={styles.iconeRetour}>
           <Ionicons name="arrow-back" size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.titre}>Ma commission</Text>
@@ -102,7 +104,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
     paddingBottom: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,

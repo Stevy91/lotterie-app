@@ -4,12 +4,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { alerteSimple } from '../alerte';
 import { appelApi } from '../api';
 import { Loterie } from '../types';
+import { TOUCHE_RETOUR, usePaddingEntete } from './enteteEcran';
 
 interface Props {
   onRetour: () => void;
 }
 
 export default function EcranTirageDisponible({ onRetour }: Props) {
+  const paddingEntete = usePaddingEntete();
   const [loteries, setLoteries] = useState<Loterie[]>([]);
   const [chargement, setChargement] = useState(true);
   const [recherche, setRecherche] = useState('');
@@ -35,8 +37,8 @@ export default function EcranTirageDisponible({ onRetour }: Props) {
 
   return (
     <View style={styles.conteneur}>
-      <View style={styles.entete}>
-        <TouchableOpacity onPress={onRetour} style={styles.iconeRetour}>
+      <View style={[styles.entete, paddingEntete]}>
+        <TouchableOpacity hitSlop={TOUCHE_RETOUR} onPress={onRetour} style={styles.iconeRetour}>
           <Ionicons name="arrow-back" size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.titre}>Tirage disponible</Text>
@@ -88,7 +90,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
     paddingBottom: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
