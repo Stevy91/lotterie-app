@@ -37,8 +37,16 @@ class BluetoothPrinterModule : Module() {
     /**
      * Un appareil appaire est retenu comme imprimante si son nom le dit.
      * « 4G_Printer » sur le BROLEO, « IposPrinter » sur d'autres chassis.
+     *
+     * La liste s'est allongee pour les imprimantes de poche vendues sous
+     * reference seche : une PT-210 ne contient ni « print » ni « pos ». Elle
+     * ne sert que pour la detection AUTOMATIQUE -- une imprimante choisie a
+     * la main dans les reglages est retenue quel que soit son nom.
      */
-    private val NOM_IMPRIMANTE = Regex("print|imprim|pos", RegexOption.IGNORE_CASE)
+    private val NOM_IMPRIMANTE = Regex(
+      "print|imprim|pos|thermal|ticket|receipt|pt-?\\d|mpt|mtp|rpp|zj-?\\d|tsc|spp",
+      RegexOption.IGNORE_CASE,
+    )
 
     /** 58 mm = 384 points = 48 octets par ligne de trame. */
     private const val LARGEUR_MAX_PIXELS = 384
@@ -48,6 +56,20 @@ class BluetoothPrinterModule : Module() {
   }
 
   private var liaison: BluetoothSocket? = null
+
+  /**
+   * Adresse de l'imprimante au bout de la liaison ouverte. Sert a savoir s'il
+   * faut se reconnecter quand le vendeur en choisit une autre dans Parametre.
+   */
+  private var adresseLiee: String? = null
+
+  /**
+   * Imprimante demandee par le dernier connecter(). Conservee pour que la
+   * reconnexion automatique, quand la liaison tombe en cours de fiche, reparte
+   * vers la MEME imprimante : sans elle, socket() relancait la detection par
+   * nom et la fin de la fiche pouvait sortir sur une autre machine.
+   */
+  private var adresseDemandee: String? = null
 
   private val adaptateur: BluetoothAdapter?
     get() = BluetoothAdapter.getDefaultAdapter()
@@ -63,13 +85,16 @@ class BluetoothPrinterModule : Module() {
      * detection la prendrait pour l'imprimante du terminal et les fiches
      * sortiraient au mauvais endroit.
      */
-    AsyncFunction("estDisponible") {
-      if (Build.MANUFACTURER.contains("SUNMI", ignoreCase = true)) {
+    AsyncFunction("estDisponible") { adresse: String? ->
+      // Une imprimante designee a la main l'emporte sur tout, y compris sur
+      // l'exclusion des Sunmi : si le vendeur a branche une imprimante de
+      // poche sur son terminal et l'a choisie, c'est qu'il la veut.
+      if (adresse == null && Build.MANUFACTURER.contains("SUNMI", ignoreCase = true)) {
         return@AsyncFunction false
       }
 
       try {
-        imprimanteAppairee() != null
+        imprimanteAppairee(adresse) != null
       } catch (e: Exception) {
         // Bluetooth eteint ou permission refusee : ce n'est pas ce pilote-la.
         false
@@ -77,25 +102,45 @@ class BluetoothPrinterModule : Module() {
     }
 
     /** Nom de l'imprimante trouvee, pour le diagnostic. */
-    AsyncFunction("nomImprimante") {
+    AsyncFunction("nomImprimante") { adresse: String? ->
       try {
-        imprimanteAppairee()?.name
+        imprimanteAppairee(adresse)?.name
       } catch (e: Exception) {
         null
       }
     }
 
-    AsyncFunction("connecter") { lier() }
+    /**
+     * Tous les appareils Bluetooth appaires, sans filtre sur le nom.
+     *
+     * Sert a l'ecran de reglage : le vendeur choisit lui-meme son imprimante.
+     * Aucune heuristique de nom n'est fiable sur ce materiel -- les modeles
+     * bon marche s'annoncent sous des references seches, parfois sous un nom
+     * generique partage par dix fabricants.
+     */
+    AsyncFunction("listerAppareils") {
+      try {
+        val adaptateur = this@BluetoothPrinterModule.adaptateur
+        if (adaptateur == null || !adaptateur.isEnabled) {
+          return@AsyncFunction emptyList<Map<String, String>>()
+        }
+
+        adaptateur.bondedDevices
+          ?.map { mapOf("adresse" to it.address, "nom" to (it.name ?: it.address)) }
+          ?: emptyList()
+      } catch (e: Exception) {
+        // Permission refusee : on rend une liste vide, l'ecran le dira.
+        emptyList<Map<String, String>>()
+      }
+    }
+
+    AsyncFunction("connecter") { adresse: String? ->
+      adresseDemandee = adresse
+      lier(adresse)
+    }
 
     /** Ferme la liaison : le terminal ne tolere pas toujours deux connexions. */
-    AsyncFunction("fermer") {
-      try {
-        liaison?.close()
-      } catch (e: Exception) {
-        // Deja fermee ou terminal debranche : rien a sauver.
-      }
-      liaison = null
-    }
+    AsyncFunction("fermer") { fermerLiaison() }
 
     /** Ecrit des octets bruts (commandes ESC/POS deja composees). */
     AsyncFunction("envoyer") { base64: String ->
@@ -110,6 +155,7 @@ class BluetoothPrinterModule : Module() {
         // impression reparte sur une connexion neuve au lieu d'echouer en
         // boucle sur un tuyau mort.
         liaison = null
+        adresseLiee = null
         throw CodedException("ECRITURE_IMPOSSIBLE", "La liaison avec l'imprimante a ete coupee (${e.message}).", e)
       }
     }
@@ -130,19 +176,26 @@ class BluetoothPrinterModule : Module() {
     }
   }
 
-  /** Le premier appareil appaire dont le nom annonce une imprimante. */
-  private fun imprimanteAppairee(): BluetoothDevice? {
+  /**
+   * L'imprimante a utiliser : celle dont l'adresse est donnee, ou a defaut le
+   * premier appareil appaire dont le nom annonce une imprimante.
+   */
+  private fun imprimanteAppairee(adresse: String? = null): BluetoothDevice? {
     val adaptateur = this.adaptateur ?: return null
     if (!adaptateur.isEnabled) return null
 
-    return adaptateur.bondedDevices?.firstOrNull { appareil ->
+    val appaires = adaptateur.bondedDevices ?: return null
+
+    if (adresse != null) {
+      return appaires.firstOrNull { it.address.equals(adresse, ignoreCase = true) }
+    }
+
+    return appaires.firstOrNull { appareil ->
       NOM_IMPRIMANTE.containsMatchIn(appareil.name ?: "")
     }
   }
 
-  private fun lier() {
-    if (liaison?.isConnected == true) return
-
+  private fun lier(adresse: String? = null) {
     val adaptateur = this.adaptateur
       ?: throw CodedException("BLUETOOTH_ABSENT", "Ce terminal n'a pas de Bluetooth.", null)
 
@@ -150,12 +203,26 @@ class BluetoothPrinterModule : Module() {
       throw CodedException("BLUETOOTH_ETEINT", "Le Bluetooth est eteint : allume-le pour imprimer.", null)
     }
 
-    val appareil = imprimanteAppairee()
+    val appareil = imprimanteAppairee(adresse)
       ?: throw CodedException(
         "IMPRIMANTE_NON_APPAIREE",
-        "Aucune imprimante appairee sur ce terminal. Appaire-la dans les reglages Bluetooth, puis reessaie.",
+        if (adresse == null) {
+          "Aucune imprimante appairee sur ce terminal. Appaire-la dans les reglages Bluetooth, puis reessaie."
+        } else {
+          "L'imprimante choisie n'est plus appairee. Reappaire-la, ou choisis-en une autre dans Parametre."
+        },
         null,
       )
+
+    // On resout l'imprimante AVANT de decider si la liaison ouverte convient.
+    // Comparer a l'adresse demandee ne suffisait pas : en mode automatique
+    // elle est nulle, et une liaison ouverte vers l'imprimante precedemment
+    // choisie aurait ete conservee alors que la detection en designe une
+    // autre. Les fiches seraient sorties au mauvais endroit.
+    if (liaison?.isConnected == true) {
+      if (adresseLiee.equals(appareil.address, ignoreCase = true)) return
+      fermerLiaison()
+    }
 
     // La recherche d'appareils sature la radio et fait echouer la connexion.
     try {
@@ -180,10 +247,23 @@ class BluetoothPrinterModule : Module() {
         )
       }
     }
+
+    adresseLiee = appareil.address
+  }
+
+  /** Ferme la liaison courante et oublie a qui elle allait. */
+  private fun fermerLiaison() {
+    try {
+      liaison?.close()
+    } catch (e: Exception) {
+      // Deja fermee ou imprimante eteinte : rien a sauver.
+    }
+    liaison = null
+    adresseLiee = null
   }
 
   private fun socket(): BluetoothSocket {
-    lier()
+    lier(adresseDemandee)
 
     return liaison ?: throw CodedException("IMPRIMANTE_INDISPONIBLE", "L'imprimante Bluetooth n'est pas disponible.", null)
   }

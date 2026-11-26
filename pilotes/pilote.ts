@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as SunmiPrinterLibrary from '@mitsuharu/react-native-sunmi-printer-library';
 
+import { autoriserBluetooth, obtenirImprimanteChoisie } from '../imprimante';
 import SenraisePrinter from '../modules/senraise-printer';
 import IposPrinter from '../modules/ipos-printer';
 import BluetoothPrinter from '../modules/bluetooth-printer';
@@ -300,6 +301,12 @@ async function viderFile(): Promise<void> {
   await BluetoothPrinter!.envoyer(enBase64(paquet));
 }
 
+/**
+ * Imprimante designee par le vendeur dans Parametre, s'il y en a une.
+ * Retenue au moment du choix du pilote et reutilisee a chaque connexion.
+ */
+let adresseBluetooth: string | null = null;
+
 const piloteBluetooth: Pilote = {
   nom: 'bluetooth',
 
@@ -307,7 +314,7 @@ const piloteBluetooth: Pilote = {
     if (!BluetoothPrinter) {
       throw new Error("Le module d'impression Bluetooth n'est pas embarque dans cette version de l'app.");
     }
-    await BluetoothPrinter.connecter();
+    await BluetoothPrinter.connecter(adresseBluetooth);
   },
 
   // Aucun numero de serie : l'appelant retombe sur l'identifiant Android.
@@ -402,12 +409,30 @@ export async function obtenirPilote(): Promise<Pilote> {
     throw new Error("L'impression n'est disponible que sur Android.");
   }
 
-  // Bluetooth en dernier des trois : un service installe est une preuve plus
-  // sure qu'un appareil appaire, qu'un vendeur pourrait avoir ajoute lui-meme.
+  // Imprimante designee a la main dans Parametre : elle passe avant tout le
+  // reste. C'est le seul moyen fiable sur un telephone ordinaire, ou aucune
+  // imprimante interne n'existe et ou les modeles de poche portent des noms
+  // qu'aucun filtre ne reconnait. Elle permet aussi, sur un terminal de
+  // vente, d'imprimer sur une imprimante externe plutot que sur la sienne.
+  const adresseChoisie = await obtenirImprimanteChoisie();
+  if (adresseChoisie && BluetoothPrinter) {
+    await autoriserBluetooth();
+    try {
+      if (await BluetoothPrinter.estDisponible(adresseChoisie)) {
+        adresseBluetooth = adresseChoisie;
+        choisi = piloteBluetooth;
+        return choisi;
+      }
+    } catch {
+      // Bluetooth eteint ou imprimante desappairee : on laisse la detection
+      // automatique tenter sa chance plutot que de bloquer la vente.
+    }
+  }
+  adresseBluetooth = null;
+
   const candidats: Array<[{ estDisponible(): Promise<boolean> } | null, Pilote]> = [
     [SenraisePrinter, piloteSenraise],
     [IposPrinter, piloteIpos],
-    [BluetoothPrinter, piloteBluetooth],
   ];
 
   for (const [module, pilote] of candidats) {
@@ -423,6 +448,23 @@ export async function obtenirPilote(): Promise<Pilote> {
     }
   }
 
+  // Bluetooth apres les services internes : un service installe est une preuve
+  // plus sure qu'un appareil appaire, qu'un vendeur pourrait avoir ajoute
+  // lui-meme. La permission n'est demandee QU'ICI, et pas plus haut : sur un
+  // Sunmi ou un SENRAISE on n'arrive jamais jusqu'a cette ligne, et il serait
+  // deplace de reclamer le Bluetooth a un vendeur qui ne s'en sert pas.
+  if (BluetoothPrinter) {
+    try {
+      await autoriserBluetooth();
+      if (await BluetoothPrinter.estDisponible()) {
+        choisi = piloteBluetooth;
+        return choisi;
+      }
+    } catch {
+      // Permission refusee ou Bluetooth eteint : on finit sur le Sunmi.
+    }
+  }
+
   choisi = piloteSunmi;
   return choisi;
 }
@@ -430,4 +472,8 @@ export async function obtenirPilote(): Promise<Pilote> {
 /** Pour les tests et le diagnostic : force le choix a la prochaine impression. */
 export function reinitialiserPilote(): void {
   choisi = null;
+  // Sinon, changer d'imprimante dans Parametre n'aurait d'effet qu'au
+  // prochain demarrage de l'application : le pilote garderait l'ancienne
+  // adresse et continuerait d'imprimer sur l'imprimante precedente.
+  adresseBluetooth = null;
 }

@@ -7,18 +7,33 @@ import { requireOptionalNativeModule } from 'expo';
  * Ce module ne sait pas imprimer : il ouvre la liaison et ecrit des octets.
  * Les commandes ESC/POS sont composees en TypeScript, voir pilotes/escpos.ts.
  */
+/** Un appareil Bluetooth appaire, tel que l'ecran de reglage le propose. */
+export interface AppareilBluetooth {
+  adresse: string;
+  nom: string;
+}
+
 export interface ImprimanteBluetooth {
   /**
    * Une imprimante appairee est-elle presente ?
-   * Les Sunmi sont ecartes : leur imprimante est interne et pilotee par leur
-   * propre SDK.
+   *
+   * Sans adresse, la detection cherche un nom d'imprimante et ecarte les
+   * Sunmi, dont l'imprimante est interne. Avec une adresse -- celle que le
+   * vendeur a choisie dans Parametre -- on verifie seulement que cet appareil
+   * est toujours appaire, sans exclure quoi que ce soit.
    */
-  estDisponible(): Promise<boolean>;
+  estDisponible(adresse?: string | null): Promise<boolean>;
 
   /** Nom de l'imprimante trouvee, pour le diagnostic. */
-  nomImprimante(): Promise<string | null>;
+  nomImprimante(adresse?: string | null): Promise<string | null>;
 
-  connecter(): Promise<void>;
+  /**
+   * Tous les appareils appaires, sans filtre : aucune heuristique de nom n'est
+   * fiable sur ces imprimantes de poche, c'est au vendeur de designer la sienne.
+   */
+  listerAppareils(): Promise<AppareilBluetooth[]>;
+
+  connecter(adresse?: string | null): Promise<void>;
   fermer(): Promise<void>;
 
   /** Octets bruts, en base64 : commandes ESC/POS deja composees. */
